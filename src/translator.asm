@@ -33,6 +33,8 @@ find_opcode PROC
     operator_address    :PTR BYTE
     operand_one_type    :BYTE
     operand_two_type    :BYTE
+    operand_one_size    :BYTE
+    operand_two_size    :BYTE
     pushad
     mov ecx, aggregate_table.length
     mov esi, aggregate_table.start_of_list
@@ -45,6 +47,7 @@ find_opcode PROC
         inc edx
         add esi, sizeof operator_mapping_element
     .endw
+    ;process error TODO
 next:
     ;esi points to the correct concrete table
     mov ecx, [esi + 10]
@@ -55,7 +58,15 @@ next:
 
     mov edx, 0
     .while edx < ecx
-        
+        mov bl, [esi+1]
+        mov bh, [esi+3]
+        .if (al == bl) && (ah == bh)
+            mov bl, [esi+2]
+            mov bh, [esi+4]
+            .if (operand_one_size == bl) && (operand_two_size == bh)
+                
+            .endif
+        .endif
     .endw
     popad   
 find_opcode ENDP
