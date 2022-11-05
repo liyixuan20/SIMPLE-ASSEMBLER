@@ -185,7 +185,7 @@ data_process:
 					invoke ParseInteger32
 					add size_count, eax
 				.ENDIF
-				ClearString ADDR data_num, dup_length
+				INVOKE ClearString ADDR data_num, dup_length
 				mov is_digit, 0
 				mov dup_length, 0
 				

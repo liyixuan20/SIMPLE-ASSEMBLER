@@ -6,6 +6,8 @@
 
 **参考文献**：[Intel® 64 and IA-32 Architectures Software Developer’s Manual](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-instruction-set-reference-manual-325383.pdf)
 
+[Intel Pentium Instruction Set Reference (A) (tripod.com)](https://faydoc.tripod.com/cpu/index_a.htm)
+
 **参考资料**：
 
 [X86 指令格式及编码解析 (IA32 Mode)_Ross7的博客-CSDN博客_x86指令前缀](https://blog.csdn.net/ross1206/article/details/81661804)
