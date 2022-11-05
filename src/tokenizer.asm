@@ -6,7 +6,7 @@ include tokenizer.inc
 include data_proc.inc
 include functions.inc
 .data
-standard_opeator        :DWORD
+standard_opeator        :BYTE 10 DUP(0)
 srandard_operand_one    :Operand
 standard_operand_two    :Operand
 
@@ -200,7 +200,17 @@ instruction_tokenizer PROC
                 mov [esi], al
                 inc Operator_name_index
             .elseif char == ' '
-                mov current_status, after_operator_status
+                mov current_status, after_operator_status;didnot consider : after blank
+                mov esi, offset Operator_name
+                mov edi, offset standard_opeator
+                mov ecx, 0
+                .while ecx < Operator_name_index
+                    mov al, [esi]
+                    mov [edi], al
+                    inc esi
+                    inc edi
+                    inc ecx
+                .endw
             .elseif char == ':'
                 mov current_status, start_status
                 invoke process_jump_label, offset Operator_name, Operator_name_index, current_address
