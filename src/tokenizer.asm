@@ -52,17 +52,49 @@ register_name_to_standard_operand PROC
     operand_pointer     :DWORD,
     operand_name_pointer:DWORD
 
-    mov edi, operand_pointer
-    mov esi, operand_name_pointer
+    mov eax, operand_pointer
+    mov ebx, operand_name_pointer
 
-    mov [edi].op_type, reg_type
+    mov [eax].op_type, reg_type
     mov ecx, 0
     mov edx, offset register_to_binary_list
     .while ecx < 24
-        mov 
-
+        lea edi, (register_name_to_standard_operand PTR[edx]).string_name
+        invoke Str_compare ebx, edi
+        je next
+        inc ecx
+        add edx, sizeof register_name_to_standard_operand
     .endw
+next:
+    .if ecx < 8
+        mov [eax].op_size, 1
+    .elseif ecx < 16
+        mov [eax].op_size, 2
+    .elseif ecx < 32
+        mov[eax].op_size, 4
+    .endif
+    mov esi, [eax].address
+    mov dx, (register_name_to_standard_operand PTR[edx]).binary_name
+    mov RegOperand PTR[esi].reg, dx
+    ret
 register_name_to_standard_operand ENDP
+imm_to_standard_operand PROC
+    operand_pointer     :DWORD,
+    imm_name_pointer    :DWORD,
+    imm_name_len        :DWORD
+
+    mov ecx, imm_name_len
+    mov edx, imm_name_pointer
+    invoke ParseInteger32
+
+    mov ebx, operand_pointer
+    mov (operand PTR[ebx]).op_type, imm_type
+    mov (operand PTR[ebx]).op_size, 4   ;Simplified--all treated as 32bit integer
+    
+    mov esi, (operand PTR[ebx]).address
+    mov (ImmOperand PTR[esi]).value, eax
+    ret
+imm_to_standard_operand ENDP
 process_operand PROC
     operand_name        :DWORD
     operand_name_len    :BYTE
