@@ -9,6 +9,8 @@ include functions.inc
 standard_opeator        :BYTE 10 DUP(0)
 srandard_operand_one    :Operand
 standard_operand_two    :Operand
+operand_one_buffer      :Operand
+operand_two_buffer      :Operand
 
 register_to_binary_list register_string_to_standard<"AL", 8bitlow shl 4 + EAX_NUM>
 register_string_to_standard<"BL", 8bitlow shl 4 + EBX_NUM>
@@ -59,11 +61,11 @@ register_name_to_standard_operand PROC
     mov ecx, 0
     mov edx, offset register_to_binary_list
     .while ecx < 24
-        lea edi, (register_name_to_standard_operand PTR[edx]).string_name
+        lea edi, (register_string_to_standard PTR[edx]).string_name
         invoke Str_compare ebx, edi
         je next
         inc ecx
-        add edx, sizeof register_name_to_standard_operand
+        add edx, sizeof register_string_to_standards
     .endw
 next:
     .if ecx < 8
@@ -176,6 +178,11 @@ instruction_tokenizer PROC
             Operand_name_index  :BYTE,
             Operand_type        :BYTE,
     pushad
+    mov eax, offset operand_one_buffer
+    mov standard_operand_one.address, eax
+    mov eax, offser operand_two_buffer
+    mov standard_operand_two.address, eax
+
     mov Operator_name_index, 0
     mov Operand_name_index, 0
     mov edx, proc_start_context

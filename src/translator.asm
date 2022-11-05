@@ -30,11 +30,15 @@ aggregate_table :operator_mapping_list <1, offset sub_table>
 
 .code
 find_opcode PROC
-    operator_address    :PTR BYTE
-    operand_one_type    :BYTE
-    operand_two_type    :BYTE
-    operand_one_size    :BYTE
+    operator_address    :PTR BYTE,
+    operand_one_type    :BYTE,
+    operand_two_type    :BYTE,
+    operand_one_size    :BYTE,
     operand_two_size    :BYTE
+    LOCAL   opcode      :BYTE,
+            encoded     :BYTE,
+            digit       :BYTE
+     
     pushad
     mov ecx, aggregate_table.length
     mov esi, aggregate_table.start_of_list
@@ -56,33 +60,90 @@ next:
     mov al, operand_one_type
     mov ah, operand_two_type
 
-    mov edx, 0
+    mov dl, [esi+2] ;size
+    mov dh, [esi+4]
     .while edx < ecx
-        mov bl, [esi+1]
+        mov bl, [esi+1];type
         mov bh, [esi+3]
         .if (al == bl) && (ah == bh)
-            mov bl, [esi+2]
-            mov bh, [esi+4]
-            .if (operand_one_size == bl) && (operand_two_size == bh)
-                
+            .if (operand_one_size == dl) && (operand_two_size == dh)
+                jmp next2
+            .endif
+        .elseif (bl == reg_or_mem_type && (al == reg_type || al == mem_type)) && (ah == bh)
+            .if (operand_one_size == dl) && (operand_two_size == dh)
+                jmp next2
+            .endif
+        .elseif (al == bl) && ((ah == reg_type || ah == mem_type) && bh == reg_or_mem_type)
+            .if (operand_one_size == dl) && (operand_two_size == dh)
+                jmp next2
             .endif
         .endif
+        inc edx
+        add esi, sizeof operand_mapping_element
     .endw
-    popad   
+next2:
+    ;esi points to the correct item
+    mov bl, [esi]
+    mov opcode, bl
+
+    mov bl, [esi+5]
+    mov encoded, bl
+
+    mov bl, [esi+6]
+    mov digit, bl
+    popad  
+    mov al, opcode
+    mov ah, encoded
+    mov bl, digit
+    ret
 find_opcode ENDP
 
 generate_binary_code PROC
-    operator_address    :PTR BYTE
-    operand_one_address :PTR Operand
-    operand_two_address :PTR Operand
+    operator_address    :PTR BYTE,
+    operand_one_address :PTR Operand,
+    operand_two_address :PTR Operand,
     valid_oprand_count  :DWORD
+    LOCAL   opcode      :BYTE,
+            encoded     :BYTE,
+            digit       :BYTE,
+            mod_        :BYTE,
+            reg_        :BYTE,
+            rm_         :BYTE
 
     .if valid_oprand_count == 2
         mov esi, operand_one_address
         mov edi, operand_two_address
         mov bl, (Operand PTR[esi]).op_type
         mov bh, (Operand PTR[edi]).op_type
-        invoke find_opcode, operator_address, bl, bh; return opcode:
+        mov cl, (Operand PTR[esi]).op_size
+        mov ch, (Operand PTR[edi]).op_size
+
+        invoke find_opcode, operator_address, bl, bh, cl, ch; return opcode:
+        mov opcode, al
+        mov encoded, ah
+        mov digit, bl
+        
+        .if bl == reg_type && bh == reg_type
+            mov mod_, 3 ;11b
+            mov esi, (Operand PTR[esi]).address
+            mov al, (RegOperand PTR[esi]).reg
+            mov edi, (Operand PTR[edi]).address
+            mov ah, (RegOperand PTR[edi]).reg
+            mov reg_, al
+            mov rm_, ah
+
+            shl mod_, 6
+            shl reg_, 3
+            mov al, 0
+            add al, mod_
+            add al, reg_
+            add al, rm_
+            mov ah, opcode
+            mov ebx, TYPE WORD
+            invoke WriteHexB
+            ret
+            ;return ax
+        .endif
     .endif
 
 generate_binary_code ENDP
