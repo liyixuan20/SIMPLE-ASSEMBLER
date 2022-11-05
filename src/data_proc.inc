@@ -63,9 +63,10 @@ EBP_NUM = 0101b
 ESI_NUM = 0110b
 EDI_NUM = 0111b
 FULL_NUM = 1111b ;做检查num值用
-Fst_NUM = 0001b
-Sec_NUM = 0010b
-FS_NUM = 0011b
+32bit = 0000b
+16bit = 0001b 
+8bitlow = 0010b 
+8bithigh = 0011b
 
 ;operand types
 null_type = 00000000b

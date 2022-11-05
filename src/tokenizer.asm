@@ -6,11 +6,34 @@ include tokenizer.inc
 include data_proc.inc
 include functions.inc
 .data
-standard_opeator    :DWORD
-srandard_operand_one:Operand
-standard_operand_two:Operand
+standard_opeator        :DWORD
+srandard_operand_one    :Operand
+standard_operand_two    :Operand
 
-register_to_binary_list register_string_to_standard<"AX", >
+register_to_binary_list register_string_to_standard<"AL", 8bitlow shl 4 + EAX_NUM>
+register_string_to_standard<"BL", 8bitlow shl 4 + EBX_NUM>
+register_string_to_standard<"CL", 8bitlow shl 4 + ECX_NUM>
+register_string_to_standard<"DL", 8bitlow shl 4 + EDX_NUM>
+register_string_to_standard<"AH", 8bithigh shl 4 + EAX_NUM>
+register_string_to_standard<"BH", 8bithigh shl 4 + EBX_NUM>
+register_string_to_standard<"CH", 8bithigh shl 4 + ECX_NUM>
+register_string_to_standard<"DH", 8bithigh shl 4 + EDX_NUM>
+register_string_to_standard<"AX", 16bit shl 4 + EAX_NUM>
+register_string_to_standard<"BX", 16bit shl 4 + EBX_NUM>
+register_string_to_standard<"CX", 16bit shl 4 + ECX_NUM>
+register_string_to_standard<"DX", 16bit shl 4 + EDX_NUM>
+register_string_to_standard<"SI", 16bit shl 4 + ESI_NUM>
+register_string_to_standard<"DI", 16bit shl 4 + EDI_NUM>
+register_string_to_standard<"SP", 16bit shl 4 + ESP_NUM>
+register_string_to_standard<"BP", 16bit shl 4 + EBP_NUM>
+register_string_to_standard<"EAX",32bit shl 4 + EAX_NUM>
+register_string_to_standard<"EBX",32bit shl 4 + EBX_NUM>
+register_string_to_standard<"ECX",32bit shl 4 + ECX_NUM>
+register_string_to_standard<"EDX",32bit shl 4 + EDX_NUM>
+register_string_to_standard<"ESI",32bit shl 4 + ESI_NUM>
+register_string_to_standard<"EDI",32bit shl 4 + EDI_NUM>
+register_string_to_standard<"ESP",32bit shl 4 + ESP_NUM>
+register_string_to_standard<"EBP",32bit shl 4 + EBP_NUM>
 .code
 ClearString PROC
     start_address   :DWORD
@@ -25,7 +48,21 @@ ClearString PROC
         inc ecx
     .endw
 ClearString ENDP
+register_name_to_standard_operand PROC
+    operand_pointer     :DWORD,
+    operand_name_pointer:DWORD
 
+    mov edi, operand_pointer
+    mov esi, operand_name_pointer
+
+    mov [edi].op_type, reg_type
+    mov ecx, 0
+    mov edx, offset register_to_binary_list
+    .while ecx < 24
+        mov 
+
+    .endw
+register_name_to_standard_operand ENDP
 process_operand PROC
     operand_name        :DWORD
     operand_name_len    :BYTE
@@ -36,7 +73,11 @@ process_operand PROC
         invoke data_name_to_standard_operand, ebx, operand_position
         ret
     .endif
-
+    .if operand_position == 1
+        mov standard_operand_one.op_type, reg_type
+        invoke register_name_to_standard_operand, offset standard_operand_one, offset operand_name
+    .elseif operand_position == 2
+    .endif
     ;process error
     ret
 process_operand ENDP
