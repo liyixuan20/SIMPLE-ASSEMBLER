@@ -100,15 +100,30 @@ process_operand PROC
     operand_name_len    :BYTE
     operand_position    :BYTE   ; 1 or 2
     
-    invoke find_symbol, offset data_name_list, offset operand_name
+    invoke find_symbol, offset data_symbol_list, offset operand_name
     .if ebx != 0
-        invoke data_name_to_standard_operand, ebx, operand_position
-        ret
+        .if operand_position == 1
+            invoke data_name_to_standard_operand, offset standard_operand_one, offset operand_name
+            ret
+        .elseif operand_position == 2
+            invoke data_name_to_standard_operand, offset standard_operand_two, offset operand_name
+            ret
+    .endif
+    .endif
+    invoke find_symbol, offset proc_symbol_list, offset operand_name
+    .if ebx != 0
+    ;TODO
+    .endif
+    invoke find_symbol, offset code_symbol_list, offset operand_name
+    .if ebx != 0
+    ;TODO
     .endif
     .if operand_position == 1
-        mov standard_operand_one.op_type, reg_type
         invoke register_name_to_standard_operand, offset standard_operand_one, offset operand_name
+        ret
     .elseif operand_position == 2
+        invoke register_name_to_standard_operand, offset standard_operand_two, offset operand_name
+        ret
     .endif
     ;process error
     ret
@@ -136,7 +151,16 @@ check_proc_label PROC   ;True:eax=1   False:eax=0
         mov eax, 1
         ret
 check_proc_label ENDP
-
+check_endp PROC
+    operand_name    :DWORD.
+    mov esi, operand_name
+    mov eax, 0
+    .if [esi] == 'E' && [esi+1] == 'N' && [esi+2] == 'D' && [esi+3] == 'P'
+        mov eax, 1
+    .elseif [esi] == 'e' && [esi+1] == 'n' && [esi+2] == 'd' && [esi+3] == 'p'
+        mov eax, 1
+    ret
+check_endp ENDP
 instruction_tokenizer PROC
     proc_start_context   :DWORD,
     code_end_context     :DWORD,
@@ -190,6 +214,15 @@ instruction_tokenizer PROC
                 mov al, char
                 mov [esi], al
                 inc Operand_name_index
+                mov Operand_type, reg_or_mem_type
+            .elseif char >= '0' && char <='9'
+                mov current_status, operand_one_status
+                mov esi, offset Operand_name
+                add esi, Operator_name_index
+                mov al, char
+                mov [esi], al
+                inc Operand_name_index
+                mov Operand_type, imm_type
             .elseif char == ':'
                 mov current_status, start_status
                 invoke process_jump_label, offset Operator_name, Operator_name_index, current_address
@@ -202,12 +235,29 @@ instruction_tokenizer PROC
                 mov al, char
                 mov [esi], al
                 inc Operand_name_index
-            .elseif char == ' '
+            .elseif char >= '0' && char <='9'
+                mov esi, offset Operand_name
+                add esi, Operator_name_index
+                mov al, char
+                mov [esi], al
+                inc Operand_name_index
+            .elseif (char == ' ') || (char == ',')
+                invoke check_endp, Operand_name, Operand_name_index
+                .if eax == 1
+                    .jmp final
+                .endif
                 mov current_status, after_operand_one_status
                 invoke process_operand, offset Operand_name, Operand_name_index, Operand_type
 
                 invoke ClearString, offset Operand_name, Operand_name_index
                 mov Operand_name_index, 0
+            .elseif char == 0 | char == 10 || char == 13
+                mov current_status, start_status
+                invoke process_operand, offset Operand_name, Operand_name_index, Operand_type
+                invoke ClearString, offset Operand_name, Operand_name_index
+                mov Operand_name_index, 0
+
+                invoke generate_binary_code; TODO
             .endif
         .elseif current_status == after_operand_one_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -217,12 +267,27 @@ instruction_tokenizer PROC
                 mov al, char
                 mov [esi], al
                 inc Operand_name_index
+                mov Operand_type, reg_or_mem_type
+            .elseif (char >= '0' && char <= '9')
+                mov current_status, operand_two_status
+                mov esi, offset Operand_name
+                add esi, Operator_name_index
+                mov al, char
+                mov [esi], al
+                inc Operand_name_index
+                mov Operand_type, imm_type
             .elseif char == 0 | char == 10 || char == 13
                 mov current_status, start_status
                 invoke generate_binary_code; TODO
             .endif
         .elseif current_status == operand_two_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
+                mov esi, offset Operand_name
+                add esi, Operator_name_index
+                mov al, char
+                mov [esi], al
+                inc Operand_name_index
+            .elseif (char >= '0' && char <= '9')
                 mov esi, offset Operand_name
                 add esi, Operator_name_index
                 mov al, char
@@ -238,9 +303,8 @@ instruction_tokenizer PROC
             .endif
         .endif
     .endw
-
-
-
+final:
+        ret
 instruction_tokenizer ENDP
 code_tokenizer PROC
     start_context: DWORD,
