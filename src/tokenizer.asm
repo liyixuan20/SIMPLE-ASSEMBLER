@@ -200,17 +200,8 @@ instruction_tokenizer PROC
                 mov [esi], al
                 inc Operator_name_index
             .elseif char == ' '
-                mov current_status, after_operator_status;didnot consider : after blank
-                mov esi, offset Operator_name
-                mov edi, offset standard_opeator
-                mov ecx, 0
-                .while ecx < Operator_name_index
-                    mov al, [esi]
-                    mov [edi], al
-                    inc esi
-                    inc edi
-                    inc ecx
-                .endw
+                mov current_status, after_operator_status
+                
             .elseif char == ':'
                 mov current_status, start_status
                 invoke process_jump_label, offset Operator_name, Operator_name_index, current_address
@@ -225,6 +216,17 @@ instruction_tokenizer PROC
                 mov [esi], al
                 inc Operand_name_index
                 mov Operand_type, reg_or_mem_type
+
+                mov esi, offset Operator_name
+                mov edi, offset standard_opeator
+                mov ecx, 0
+                .while ecx < Operator_name_index
+                    mov al, [esi]
+                    mov [edi], al
+                    inc esi
+                    inc edi
+                    inc ecx
+                .endw
             .elseif char >= '0' && char <='9'
                 mov current_status, operand_one_status
                 mov esi, offset Operand_name
@@ -233,6 +235,17 @@ instruction_tokenizer PROC
                 mov [esi], al
                 inc Operand_name_index
                 mov Operand_type, imm_type
+
+                mov esi, offset Operator_name
+                mov edi, offset standard_opeator
+                mov ecx, 0
+                .while ecx < Operator_name_index
+                    mov al, [esi]
+                    mov [edi], al
+                    inc esi
+                    inc edi
+                    inc ecx
+                .endw
             .elseif char == ':'
                 mov current_status, start_status
                 invoke process_jump_label, offset Operator_name, Operator_name_index, current_address
