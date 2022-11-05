@@ -54,8 +54,8 @@ next:
     mov ah, operand_two_type
 
     mov edx, 0
-    .while
-    
+    .while edx < ecx
+        
     .endw
     popad   
 find_opcode ENDP
