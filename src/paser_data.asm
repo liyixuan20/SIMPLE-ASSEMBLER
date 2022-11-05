@@ -57,7 +57,7 @@ push_symbol_list PROC USES ebx  edx esi edi,
     ret
 push_symbol_list ENDP
 
-find_symbol PROC USES eax ecx edx esi edi,
+find_symbol PROC USES eax ecx edx esi edi,  ;return the address stored in ebx
     list_offset:dword,
     symbolname: dword
 
@@ -69,7 +69,7 @@ find_symbol PROC USES eax ecx edx esi edi,
     
     mov ecx, 0
     mov ecx, len
-    mov eax. 0
+    mov eax, 0
     mov ebx, (Symbol_List PTR[edx]).address
 
     L1:
