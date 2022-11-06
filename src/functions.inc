@@ -95,7 +95,8 @@ generate_binary_code PROTO,
     operator_address    :PTR BYTE,
     operand_one_address :PTR Operand,
     operand_two_address :PTR Operand,
-    valid_oprand_count  :DWORD
+    valid_oprand_count  :DWORD,
+	current_address_pointer :DWORD
 
 
 ;--------------------------
