@@ -52,12 +52,16 @@ ClearString PROC
 ClearString ENDP
 register_name_to_standard_operand PROC
     operand_pointer     :DWORD,
-    operand_name_pointer:DWORD
+    operand_name_pointer:DWORD,
+    indirect_flag       :BYTE
 
     mov eax, operand_pointer
     mov ebx, operand_name_pointer
-
-    mov [eax].op_type, reg_type
+    .if indirect_flag == 0
+        mov [eax].op_type, reg_type
+    .elseif indirect_flag == 1
+        mov [eax].op_type, mem_type ;TODO
+    .endif
     mov ecx, 0
     mov edx, offset register_to_binary_list
     .while ecx < 24
@@ -68,12 +72,16 @@ register_name_to_standard_operand PROC
         add edx, sizeof register_string_to_standards
     .endw
 next:
-    .if ecx < 8
-        mov [eax].op_size, 1
-    .elseif ecx < 16
-        mov [eax].op_size, 2
-    .elseif ecx < 32
-        mov[eax].op_size, 4
+    .if indirect_flag == 0
+        .if ecx < 8
+            mov [eax].op_size, 1
+        .elseif ecx < 16
+            mov [eax].op_size, 2
+        .elseif ecx < 32
+            mov[eax].op_size, 4
+        .endif
+    .elseif indirect_flag == 1
+        mov [eax].op_size, 4
     .endif
     mov esi, [eax].address
     mov dx, (register_name_to_standard_operand PTR[edx]).binary_name
@@ -101,6 +109,7 @@ process_operand PROC
     operand_name        :DWORD
     operand_name_len    :BYTE
     operand_position    :BYTE   ; 1 or 2
+    indirect_flag       :BYTE   ;0 or 1
     
     invoke find_symbol, offset data_symbol_list, offset operand_name
     .if ebx != 0
@@ -110,7 +119,7 @@ process_operand PROC
         .elseif operand_position == 2
             invoke data_name_to_standard_operand, offset standard_operand_two, offset operand_name
             ret
-    .endif
+        .endif
     .endif
     invoke find_symbol, offset proc_symbol_list, offset operand_name
     .if ebx != 0
@@ -121,10 +130,10 @@ process_operand PROC
     ;TODO
     .endif
     .if operand_position == 1
-        invoke register_name_to_standard_operand, offset standard_operand_one, offset operand_name
+        invoke register_name_to_standard_operand, offset standard_operand_one, offset operand_name, indirect_flag
         ret
     .elseif operand_position == 2
-        invoke register_name_to_standard_operand, offset standard_operand_two, offset operand_name
+        invoke register_name_to_standard_operand, offset standard_operand_two, offset operand_name, indirect_flag
         ret
     .endif
     ;process error
@@ -177,6 +186,7 @@ instruction_tokenizer PROC
             Operator_name_index :BYTE,
             Operand_name_index  :BYTE,
             Operand_type        :BYTE,
+            indirect_flag       :BYTE
     pushad
     mov eax, offset operand_one_buffer
     mov standard_operand_one.address, eax
@@ -187,6 +197,7 @@ instruction_tokenizer PROC
     mov Operand_name_index, 0
     mov edx, proc_start_context
     mov current_status, start_status
+    mov indirect_flag, 0
     .while edx < code_end_context
         mov char, [edx]
         inc edx
@@ -253,10 +264,13 @@ instruction_tokenizer PROC
                     inc edi
                     inc ecx
                 .endw
+            .elseif char == '['
+                mov current_status, operand_one_status
+                mov indirect_flag, 1
             .elseif char == ':'
                 mov current_status, start_status
                 invoke process_jump_label, offset Operator_name, Operator_name_index, current_address
-           
+                
             .endif
         .elseif current_status == operand_one_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -271,23 +285,24 @@ instruction_tokenizer PROC
                 mov al, char
                 mov [esi], al
                 inc Operand_name_index
-            .elseif (char == ' ') || (char == ',')
+            .elseif (char == ' ') || (char == ',') || (char == ']')
                 invoke check_endp, Operand_name, Operand_name_index
                 .if eax == 1
                     .jmp final
                 .endif
                 mov current_status, after_operand_one_status
-                invoke process_operand, offset Operand_name, Operand_name_index, Operand_type
+                invoke process_operand, offset Operand_name, Operand_name_index, Operand_type, indirect_flag
 
                 invoke ClearString, offset Operand_name, Operand_name_index
                 mov Operand_name_index, 0
+                mov indirect_flag, 0
             .elseif char == 0 | char == 10 || char == 13
                 mov current_status, start_status
-                invoke process_operand, offset Operand_name, Operand_name_index, Operand_type
+                invoke process_operand, offset Operand_name, Operand_name_index, Operand_type, indirect_flag
                 invoke ClearString, offset Operand_name, Operand_name_index
                 mov Operand_name_index, 0
 
-                invoke generate_binary_code; TODO
+                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 1; TODO
             .endif
         .elseif current_status == after_operand_one_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -306,9 +321,12 @@ instruction_tokenizer PROC
                 mov [esi], al
                 inc Operand_name_index
                 mov Operand_type, imm_type
+            .elseif char == '['
+                mov current_address, operand_two_address
+                mov indirect_flag, 1
             .elseif char == 0 | char == 10 || char == 13
                 mov current_status, start_status
-                invoke generate_binary_code; TODO
+                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 1; TODO
             .endif
         .elseif current_status == operand_two_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -323,13 +341,14 @@ instruction_tokenizer PROC
                 mov al, char
                 mov [esi], al
                 inc Operand_name_index
-            .elseif char == ' ' || char == 0 | char == 10 || char == 13
+            .elseif char == ' ' || char == 0 | char == 10 || char == 13 || char == ']'
                 mov current_status, start_status
-                invoke process_operand, offset Operand_name, Operand_name_index, Operand_type
+                invoke process_operand, offset Operand_name, Operand_name_index, Operand_type, indirect_flag
 
                 invoke ClearString, offset Operand_name, Operand_name_index
                 mov Operand_name_index, 0
-                invoke generate_binary_code; TODO
+                mov indirect_flag, 0
+                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 2; TODO
             .endif
         .endif
     .endw

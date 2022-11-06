@@ -142,6 +142,7 @@ generate_binary_code PROC
             mov ebx, TYPE WORD
             invoke WriteHexB
             ret
+        .elseif bl == mem_type
             ;return ax
         .endif
     .endif
