@@ -107,7 +107,8 @@ generate_binary_code PROC
     operator_address    :PTR BYTE,
     operand_one_address :PTR Operand,
     operand_two_address :PTR Operand,
-    valid_oprand_count  :DWORD
+    valid_oprand_count  :DWORD,
+    current_address_pointer :DWORD,
     LOCAL   opcode      :BYTE,
             encoded     :BYTE,
             digit       :BYTE,;
@@ -116,8 +117,10 @@ generate_binary_code PROC
             rm_         :BYTE,
             modRM       :BYTE,
             displacement:DWORD,
-            immediate   :DWORD
-
+            immediate   :DWORD,
+            total_bytes :DWORD
+    
+    mov total_bytes, 0
     .if valid_oprand_count == 2
         mov esi, operand_one_address
         mov edi, operand_two_address
@@ -149,7 +152,8 @@ generate_binary_code PROC
             mov ah, opcode
             mov ebx, TYPE WORD
             invoke WriteHexB
-            
+            mov eax, 1
+            mov total_bytes, eax
         .elseif bl == reg_type && bh == imm_type 
             mov edi, (Operand PTR[edi]).address; TODO store as 32bits value
             mov eax, (ImmOperand PTR[edi]).value
@@ -165,6 +169,8 @@ generate_binary_code PROC
             mov eax, immediate
             mov ebx, TYPE DWORD
             invoke WriteHexB 
+            mov eax, 5
+            mov total_bytes, eax
             ;return ax
         .elseif (bl == mem_type && bh == reg_type) || (bl == reg_type && bh == mem_type)
             .if bl == mem_type
@@ -202,6 +208,8 @@ generate_binary_code PROC
             mov eax, displacement
             mov ebx, TYPE DWORD
             invoke WriteHexB 
+            mov eax, 6
+            mov total_bytes, eax
          ;TODO indirect type 在search table 中要处理为reg_or_mem_type
         .elseif bl == indirect_type && bh == imm_type; Whether valid
 
@@ -236,9 +244,14 @@ generate_binary_code PROC
                 mov al, modRM
                 mov ebx, TYPE BYTE
                 invoke WriteHexB
+                mov eax, 2
+                mov total_bytes
             .endif
 
         .endif
     .endif
+    ;TODO return total bytes in eax
+    mov eax, total_bytes
 
+    ret
 generate_binary_code ENDP

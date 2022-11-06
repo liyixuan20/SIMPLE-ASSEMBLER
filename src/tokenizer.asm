@@ -175,7 +175,7 @@ check_endp ENDP
 instruction_tokenizer PROC
     proc_start_context   :DWORD,
     code_end_context     :DWORD,
-    current_address      :DWORD,
+    current_address_pointer     :DWORD
 
     LOCAL   current_status      :BYTE,
             char                :BYTE,
@@ -302,7 +302,7 @@ instruction_tokenizer PROC
                 invoke ClearString, offset Operand_name, Operand_name_index
                 mov Operand_name_index, 0
 
-                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 1; TODO
+                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 1, current_address_pointer; TODO
             .endif
         .elseif current_status == after_operand_one_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -326,7 +326,7 @@ instruction_tokenizer PROC
                 mov indirect_flag, 1
             .elseif char == 0 | char == 10 || char == 13
                 mov current_status, start_status
-                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 1; TODO
+                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 1, current_address_pointer; TODO
             .endif
         .elseif current_status == operand_two_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -348,7 +348,7 @@ instruction_tokenizer PROC
                 invoke ClearString, offset Operand_name, Operand_name_index
                 mov Operand_name_index, 0
                 mov indirect_flag, 0
-                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 2; TODO
+                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 2, current_address_pointer; TODO
             .endif
         .endif
     .endw
@@ -416,7 +416,7 @@ code_tokenizer PROC
                 .if eax == 1
                     mov edi, start_context
                     add edi, max_length
-                    invoke instruction_tokenizer, edx, edi, address_space; Pay attention to the following inc ecx
+                    invoke instruction_tokenizer, edx, edi, offset address_space; Pay attention to the following inc ecx
                 .endif
         .endif 
         inc ecx
