@@ -106,9 +106,11 @@ imm_to_standard_operand PROC
     ret
 imm_to_standard_operand ENDP
 process_operand PROC
+
     operand_name        :DWORD,
     operand_name_len    :BYTE,
     operand_position    :BYTE,   ; 1 or 2
+
     indirect_flag       :BYTE   ;0 or 1
     
     invoke find_symbol, offset data_symbol_list, offset operand_name
@@ -163,7 +165,9 @@ check_proc_label PROC   ;True:eax=1   False:eax=0
         ret
 check_proc_label ENDP
 check_endp PROC
+
     operand_name    :DWORD
+
     mov esi, operand_name
     mov eax, 0
     .if [esi] == 'E' && [esi+1] == 'N' && [esi+2] == 'D' && [esi+3] == 'P'
@@ -175,7 +179,7 @@ check_endp ENDP
 instruction_tokenizer PROC
     proc_start_context   :DWORD,
     code_end_context     :DWORD,
-    current_address      :DWORD
+    current_address      :DWORD,
 
     LOCAL   current_status      :BYTE,
             char                :BYTE,

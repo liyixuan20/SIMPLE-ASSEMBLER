@@ -35,7 +35,7 @@ find_opcode PROC
     operand_two_type    :BYTE,
     operand_one_size    :BYTE,
     operand_two_size    :BYTE
-    
+
     LOCAL   opcode      :BYTE,
             encoded     :BYTE,
             digit       :BYTE
