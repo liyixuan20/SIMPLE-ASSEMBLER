@@ -8,8 +8,7 @@ include translator.inc
 includelib Irvine32.lib
 
 .data
-add_table 
-operand_mapping_element<80h, reg_or_mem_type, 1, imm_type, 1, 0, 0>
+add_table  operand_mapping_element<80h, reg_or_mem_type, 1, imm_type, 1, 0, 0>
 operand_mapping_element<81h, reg_or_mem_type, 2, imm_type, 2, 0, 0>
 operand_mapping_element<81h, reg_or_mem_type, 4, imm_type, 4, 0, 0>
 operand_mapping_element<83h, reg_or_mem_type, 2, imm_type, 1, 0, 0>
@@ -23,13 +22,13 @@ operand_mapping_element<02h, reg_type, 1, reg_or_mem_type, 1, 0, 0>
 operand_mapping_element<03h, reg_type, 2, reg_or_mem_type, 2, 0, 0>
 operand_mapping_element<03h, reg_type, 4, reg_or_mem_type, 4, 0, 0>
 
-sub_table
-operator_mapping_element<"ADD", 11, offset add_table>
 
-aggregate_table :operator_mapping_list <1, offset sub_table>
+inter_table operator_mapping_element <"ADD", 11, offset add_table>
+
+aggregate_table operator_mapping_list <1, offset inter_table>
 
 .code
-find_opcode PROC
+find_opcode PROC,
     operator_address    :PTR BYTE,
     operand_one_type    :BYTE,
     operand_two_type    :BYTE,
@@ -41,8 +40,9 @@ find_opcode PROC
             digit       :BYTE
      
     pushad
-    mov ecx, aggregate_table.length
-    mov esi, aggregate_table.start_of_list
+	mov esi, offset aggregate_table
+    mov ecx, (operator_mapping_list PTR[esi]).len
+    mov esi, (operator_mapping_list PTR[esi]).start_of_list
     mov edx, 0
 
     mov eax, operator_address
@@ -104,12 +104,15 @@ next2:
     ret
 find_opcode ENDP
 
-generate_binary_code PROC
+generate_binary_code PROC,
     operator_address    :PTR BYTE,
     operand_one_address :PTR Operand,
     operand_two_address :PTR Operand,
     valid_oprand_count  :DWORD,
-    current_address_pointer :DWORD,
+
+    current_address_pointer :DWORD
+
+
     LOCAL   opcode      :BYTE,
             encoded     :BYTE,
             digit       :BYTE,;
@@ -121,7 +124,10 @@ generate_binary_code PROC
             immediate   :DWORD,
             total_bytes :DWORD
     
-    mov total_bytes, 0
+
+	mov eax, 0
+    mov total_bytes, eax
+
     .if valid_oprand_count == 2
         mov esi, operand_one_address
         mov edi, operand_two_address
@@ -160,7 +166,9 @@ generate_binary_code PROC
             mov eax, (ImmOperand PTR[edi]).value
             mov immediate, eax
             mov esi, (Operand PTR[esi]).address
-            mov al, (RegOperand PTR[esi]).value
+
+            mov al, (RegOperand PTR[esi]).reg
+
             add opcode, al
             
             mov al, opcode
@@ -183,7 +191,9 @@ generate_binary_code PROC
 
             mov al, 0
             mov mod_, al
-            mov al, (RegOperand PTR[esi]).value
+
+            mov al, (RegOperand PTR[esi]).reg
+
             mov reg_, al
             mov al, 110b
             mov rm_, al
@@ -214,7 +224,9 @@ generate_binary_code PROC
          ;TODO indirect type 在search table 中要处理为reg_or_mem_type
         .elseif bl == indirect_type && bh == imm_type; Whether valid
 
-        .elseif (bl == indirect_type && bh == reg_type) || (bl == reg_type && bh == indirect)
+
+        .elseif (bl == indirect_type && bh == reg_type) || (bl == reg_type && bh == indirect_type)
+
             .if bl == indirect_type
                 mov esi, operand_two_address    ;reg
                 mov edi, operand_one_address
@@ -224,10 +236,11 @@ generate_binary_code PROC
                 mov esi, (Operand PTR[esi]).address
                 mov edi, (Operand PTR[edi]).address
 
-                mov al, (RegOperand PTR[esi]).value
+                mov al, (RegOperand PTR[esi]).reg
                 mov reg_, al 
 
-                mov al, (RegOperand PTR[edi]).value
+                mov al, (RegOperand PTR[edi]).reg
+
                 mov rm_, al
 
                 shl mod_, 6
@@ -246,7 +259,9 @@ generate_binary_code PROC
                 mov ebx, TYPE BYTE
                 invoke WriteHexB
                 mov eax, 2
-                mov total_bytes
+
+                mov total_bytes, eax
+
             .endif
 
         .endif
@@ -254,5 +269,9 @@ generate_binary_code PROC
     ;TODO return total bytes in eax
     mov eax, total_bytes
 
+
     ret
 generate_binary_code ENDP
+
+END
+

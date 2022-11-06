@@ -321,10 +321,10 @@ Next_L1:
     .ENDIF
 
 
-    .IF flag_base == 0
-        INVOKE printf, offset errormsg1
-        ret
-    .ENDIF
+    ;.IF flag_base == 0
+        ;INVOKE printf, offset errormsg1
+        ;ret
+    ;.ENDIF
 
     mov esi, ind_operand
     mov al, base

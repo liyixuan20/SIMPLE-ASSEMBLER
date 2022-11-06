@@ -27,7 +27,8 @@ push_symbol_list PROC USES ebx  edx esi edi,
 
     LOCAL len:dword
     mov edx, list_offset
-    
+
+    inc (Symbol_List PTR[edx]).len
     mov eax, (Symbol_List PTR[edx]).len
     mov len, eax
     .IF len > 256
@@ -40,16 +41,16 @@ push_symbol_list PROC USES ebx  edx esi edi,
     mov eax, sizeof Symbol_Elem
     mul len 
     add ebx, eax
-    inc (Symbol_List PTR[edx]).len
+    
 
     lea edi, (Symbol_Elem PTR[ebx]).symbol_name
     invoke Str_copy, symbolname, edi
 
-    mov eax, 0
+    
     mov eax, address
     mov (Symbol_Elem PTR[ebx]).address, eax
     
-    mov eax, 0
+    
     mov al, op_size
     mov (Symbol_Elem PTR[ebx]).op_size, al
 

@@ -39,20 +39,35 @@ dword_type:
 	ret
 convert_type_to_size ENDP   
 
+Clear_String_DWORD PROC,
+	start_address   :DWORD,
+    len             :DWORD
 
+    pushad
+    mov ecx, 0
+    mov esi, start_address
+    .while ecx < len
+        mov al, 0
+        mov [esi], al
+        inc esi
+        inc ecx
+    .endw
+	popad
+	ret
+Clear_String_DWORD ENDP
 
 
 tokenize_data_segment PROC USES ebx ecx edx esi edi,
     start_address: DWORD,
     max_bytes: DWORD
 
-    LOCAL: data_address: DWORD, line_section: BYTE, number_count: DWORD,
+    LOCAL data_address: DWORD, line_section: BYTE, number_count: DWORD,
 		  is_line_start:BYTE, name_length:DWORD, type_length:DWORD,
 		  type_size : BYTE, flag_quote:BYTE, flag_dot:BYTE, size_count:DWORD,data_size:BYTE,
 		  is_digit:BYTE, dup_length:DWORD
 
-    mov ecx, max_length
-	mov esi, str_addr
+    mov ecx, max_bytes
+	mov esi, start_address
 
 	;对数据初始化为0
 	mov data_address, 0
@@ -75,7 +90,6 @@ data_process:
 		.IF is_line_start
 			inc line_section
 		.ENDIF
-	.ENDIF
 	.ELSEIF bl == 46 ; .
 		.IF flag_quote == 0
 			INVOKE judge_segment, esi
@@ -93,13 +107,13 @@ data_process:
 			mov data_size, 0
 
 			mov dl, type_size
-			INVOKE push_list,
+			INVOKE push_symbol_list,
 				ADDR data_symbol_list,
 				ADDR var_name,
 				data_address,
 				dl
-			INVOKE ClearString ADDR var_name, name_length
-			INVOKE ClearString ADDR var_type, type_length
+			INVOKE Clear_String_DWORD, offset var_name, name_length
+			INVOKE Clear_String_DWORD, offset var_type, type_length
 			.IF size_count == 0
 				inc size_count
 			.ENDIF
@@ -133,7 +147,7 @@ data_process:
 				add edi, dup_length
 				inc dup_length
 				mov [edi], bl
-
+			.ENDIF
 			.IF type_size == 0
 				; append \0
 				mov edi, OFFSET var_name
@@ -185,7 +199,7 @@ data_process:
 					invoke ParseInteger32
 					add size_count, eax
 				.ENDIF
-				INVOKE ClearString ADDR data_num, dup_length
+				INVOKE Clear_String_DWORD, offset data_num, dup_length
 				mov is_digit, 0
 				mov dup_length, 0
 				

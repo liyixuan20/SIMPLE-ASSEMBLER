@@ -20,7 +20,7 @@ judge_segment PROC USES ebx ecx esi ,
     mov ch, [esi + 3]
     mov cl, [esi + 4]
 
-    .IF (bh == 'd') && (bl == 'a') && (ch == 'd') && (cl == 'a')
+    .IF (bh == 'd') && (bl == 'a') && (ch == 't') && (cl == 'a')
         mov al, 1
     .ELSEIF (bh == 'c') && (bl == 'o') && (ch == 'd') && (cl == 'e')
         mov al, 2
