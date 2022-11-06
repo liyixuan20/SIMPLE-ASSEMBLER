@@ -6,36 +6,36 @@ include tokenizer.inc
 include data_proc.inc
 include functions.inc
 .data
-standard_opeator        :BYTE 10 DUP(0)
+standard_opeator        BYTE 10 DUP(0)
 srandard_operand_one    :Operand
 standard_operand_two    :Operand
 operand_one_buffer      :Operand
 operand_two_buffer      :Operand
 
-register_to_binary_list register_string_to_standard<"AL", 8bitlow shl 4 + EAX_NUM>
-register_string_to_standard<"BL", 8bitlow shl 4 + EBX_NUM>
-register_string_to_standard<"CL", 8bitlow shl 4 + ECX_NUM>
-register_string_to_standard<"DL", 8bitlow shl 4 + EDX_NUM>
-register_string_to_standard<"AH", 8bithigh shl 4 + EAX_NUM>
-register_string_to_standard<"BH", 8bithigh shl 4 + EBX_NUM>
-register_string_to_standard<"CH", 8bithigh shl 4 + ECX_NUM>
-register_string_to_standard<"DH", 8bithigh shl 4 + EDX_NUM>
-register_string_to_standard<"AX", 16bit shl 4 + EAX_NUM>
-register_string_to_standard<"BX", 16bit shl 4 + EBX_NUM>
-register_string_to_standard<"CX", 16bit shl 4 + ECX_NUM>
-register_string_to_standard<"DX", 16bit shl 4 + EDX_NUM>
-register_string_to_standard<"SI", 16bit shl 4 + ESI_NUM>
-register_string_to_standard<"DI", 16bit shl 4 + EDI_NUM>
-register_string_to_standard<"SP", 16bit shl 4 + ESP_NUM>
-register_string_to_standard<"BP", 16bit shl 4 + EBP_NUM>
-register_string_to_standard<"EAX",32bit shl 4 + EAX_NUM>
-register_string_to_standard<"EBX",32bit shl 4 + EBX_NUM>
-register_string_to_standard<"ECX",32bit shl 4 + ECX_NUM>
-register_string_to_standard<"EDX",32bit shl 4 + EDX_NUM>
-register_string_to_standard<"ESI",32bit shl 4 + ESI_NUM>
-register_string_to_standard<"EDI",32bit shl 4 + EDI_NUM>
-register_string_to_standard<"ESP",32bit shl 4 + ESP_NUM>
-register_string_to_standard<"EBP",32bit shl 4 + EBP_NUM>
+register_to_binary_list register_string_to_standard<"AL", bitlow8 shl 4 + EAX_NUM>
+register_string_to_standard<"BL", bitlow8 shl 4 + EBX_NUM>
+register_string_to_standard<"CL", bitlow8 shl 4 + ECX_NUM>
+register_string_to_standard<"DL", bitlow8 shl 4 + EDX_NUM>
+register_string_to_standard<"AH", bithigh8 shl 4 + EAX_NUM>
+register_string_to_standard<"BH", bithigh8 shl 4 + EBX_NUM>
+register_string_to_standard<"CH", bithigh8 shl 4 + ECX_NUM>
+register_string_to_standard<"DH", bithigh8 shl 4 + EDX_NUM>
+register_string_to_standard<"AX", bit16 shl 4 + EAX_NUM>
+register_string_to_standard<"BX", bit16 shl 4 + EBX_NUM>
+register_string_to_standard<"CX", bit16 shl 4 + ECX_NUM>
+register_string_to_standard<"DX", bit16 shl 4 + EDX_NUM>
+register_string_to_standard<"SI", bit16 shl 4 + ESI_NUM>
+register_string_to_standard<"DI", bit16 shl 4 + EDI_NUM>
+register_string_to_standard<"SP", bit16 shl 4 + ESP_NUM>
+register_string_to_standard<"BP", bit16 shl 4 + EBP_NUM>
+register_string_to_standard<"EAX",bit32 shl 4 + EAX_NUM>
+register_string_to_standard<"EBX",bit32 shl 4 + EBX_NUM>
+register_string_to_standard<"ECX",bit32 shl 4 + ECX_NUM>
+register_string_to_standard<"EDX",bit32 shl 4 + EDX_NUM>
+register_string_to_standard<"ESI",bit32 shl 4 + ESI_NUM>
+register_string_to_standard<"EDI",bit32 shl 4 + EDI_NUM>
+register_string_to_standard<"ESP",bit32 shl 4 + ESP_NUM>
+register_string_to_standard<"EBP",bit32 shl 4 + EBP_NUM>
 .code
 ClearString PROC
     start_address   :DWORD
@@ -99,7 +99,7 @@ imm_to_standard_operand PROC
 
     mov ebx, operand_pointer
     mov (operand PTR[ebx]).op_type, imm_type
-    mov (operand PTR[ebx]).op_size, 4   ;Simplified--all treated as 32bit integer
+    mov (operand PTR[ebx]).op_size, 4   ;Simplified--all treated as bit32 integer
     
     mov esi, (operand PTR[ebx]).address
     mov (ImmOperand PTR[esi]).value, eax

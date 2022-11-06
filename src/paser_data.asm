@@ -20,10 +20,10 @@ data_symbol_list Symbol_List <0, offset data_labels>
 
 ;将symbol push 到相应list中， 如已满返回eax-1
 push_symbol_list PROC USES ebx  edx esi edi,
-    list_offset DWORD,
-    symbolname DWORD,
-    address DWORD,
-    op_size BYTE
+    list_offset: DWORD,
+    symbolname: DWORD,
+    address: DWORD,
+    op_size: BYTE
 
     LOCAL len:dword
     mov edx, list_offset
@@ -47,7 +47,7 @@ push_symbol_list PROC USES ebx  edx esi edi,
 
     mov eax, 0
     mov eax, address
-    mov (SymbolElem PTR[ebx]).address, eax
+    mov (Symbol_Elem PTR[ebx]).address, eax
     
     mov eax, 0
     mov al, op_size

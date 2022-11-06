@@ -11,9 +11,9 @@ Symbol_Elem STRUCT
     address DWORD ?
 Symbol_Elem ENDS
 
-externdef proc_symbol_list : SymbolList
-externdef code_symbol_list : SymbolList
-externdef data_symbol_list : SymbolList
+externdef proc_symbol_list : Symbol_List
+externdef code_symbol_list : Symbol_List
+externdef data_symbol_list : Symbol_List
 
 ;操作数
 Operand STRUCT
@@ -43,7 +43,7 @@ IndirectAddOperand STRUCT
     base byte ?
     index byte ?
     scale byte ?
-    align dword ?
+    align dword
     bias sdword ?
 IndirectAddOperand ENDS
 
@@ -63,10 +63,10 @@ EBP_NUM = 0101b
 ESI_NUM = 0110b
 EDI_NUM = 0111b
 FULL_NUM = 1111b ;做检查num值用
-32bit = 0000b
-16bit = 0001b 
-8bitlow = 0010b 
-8bithigh = 0011b
+bit32 = 0000b
+bit16 = 0001b 
+bitlow8 = 0010b 
+bithigh8 = 0011b
 
 ;operand types
 null_type = 00000000b

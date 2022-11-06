@@ -2,7 +2,7 @@
 .MODEL flat, stdcall
 
 include functions.inc
-include parser_data.inc
+include data_proc.inc
 include Irvine32.inc
 includelib Irvine32.lib
 

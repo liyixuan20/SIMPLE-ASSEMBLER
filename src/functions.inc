@@ -8,8 +8,8 @@ process_file PROTO,
 push_symbol_list PROTO,
     list_offset: DWORD,
     symbolname: DWORD,
-    address DWORD,
-    op_size BYTE
+    address: DWORD,
+    op_size: BYTE
 
 find_symbol PROTO,
     list_offset: DWORD,
@@ -30,7 +30,7 @@ ClearString PROTO,
     
 judge_string_type PROTO, 
     part_order: BYTE,
-    string_len: BYTE,
+    string_len: DWORD,
     flag: PTR BYTE
 
 get_reg_num PROTO,
@@ -43,8 +43,8 @@ parse_index_scale PROTO,
     scale: PTR BYTE
 
 add_byte_to_string PROTO,
-    value:BYTE
-    pos:DWORD
+    value:BYTE,
+    pos:DWORD,
     count:BYTE
 
 parse_indirect_address PROTO,
@@ -73,12 +73,12 @@ check_proc_label PROTO,  ;True:eax=1   False:eax=0
 check_endp PROTO,
     operand_name    :DWORD
 
-instruction_tokenizer PROTO
+instruction_tokenizer PROTO,
     proc_start_context   :DWORD,
     code_end_context     :DWORD,
     current_address      :DWORD
 
-code_tokenizer PROC
+code_tokenizer PROTO,
     start_context: DWORD,
     max_length: DWORD
 
