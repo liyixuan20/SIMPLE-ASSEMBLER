@@ -78,4 +78,4 @@ offset_type = 00010000b
 mem_type = 00001100b
 reg_or_mem_type = 00001101b
 
-    
+ ;regmap size对应字节数而非位数   
