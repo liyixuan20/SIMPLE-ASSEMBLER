@@ -60,7 +60,7 @@ register_name_to_standard_operand PROC
     .if indirect_flag == 0
         mov [eax].op_type, reg_type
     .elseif indirect_flag == 1
-        mov [eax].op_type, mem_type ;TODO
+        mov [eax].op_type, indirect_type ;TODO
     .endif
     mov ecx, 0
     mov edx, offset register_to_binary_list
@@ -84,8 +84,8 @@ next:
         mov [eax].op_size, 4
     .endif
     mov esi, [eax].address
-    mov dx, (register_name_to_standard_operand PTR[edx]).binary_name
-    mov RegOperand PTR[esi].reg, dx
+    mov dl, (register_name_to_standard_operand PTR[edx]).binary_name
+    mov RegOperand PTR[esi].reg, dl
     ret
 register_name_to_standard_operand ENDP
 imm_to_standard_operand PROC
@@ -233,7 +233,7 @@ instruction_tokenizer PROC
                 mov al, char
                 mov [esi], al
                 inc Operand_name_index
-                mov Operand_type, reg_or_mem_type
+                mov Operand_type, reg_or_mem_type ;eax data
 
                 mov esi, offset Operator_name
                 mov edi, offset standard_opeator
@@ -252,7 +252,7 @@ instruction_tokenizer PROC
                 mov al, char
                 mov [esi], al
                 inc Operand_name_index
-                mov Operand_type, imm_type
+                mov Operand_type, imm_type ;12
 
                 mov esi, offset Operator_name
                 mov edi, offset standard_opeator
@@ -266,7 +266,7 @@ instruction_tokenizer PROC
                 .endw
             .elseif char == '['
                 mov current_status, operand_one_status
-                mov indirect_flag, 1
+                mov indirect_flag, 1    ;indirect
             .elseif char == ':'
                 mov current_status, start_status
                 invoke process_jump_label, offset Operator_name, Operator_name_index, current_address

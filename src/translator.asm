@@ -59,7 +59,12 @@ next:
 
     mov al, operand_one_type
     mov ah, operand_two_type
-
+    .if al == indirect_type
+        mov al, reg_or_mem_type
+    .endif
+    .if ah == indirect_type
+        mov ah, reg_or_mem_type
+    .endif
     mov dl, [esi+2] ;size
     mov dh, [esi+4]
     .while edx < ecx
@@ -105,10 +110,13 @@ generate_binary_code PROC
     valid_oprand_count  :DWORD
     LOCAL   opcode      :BYTE,
             encoded     :BYTE,
-            digit       :BYTE,
+            digit       :BYTE,;
             mod_        :BYTE,
             reg_        :BYTE,
-            rm_         :BYTE
+            rm_         :BYTE,
+            modRM       :BYTE,
+            displacement:DWORD,
+            immediate   :DWORD
 
     .if valid_oprand_count == 2
         mov esi, operand_one_address
@@ -141,9 +149,95 @@ generate_binary_code PROC
             mov ah, opcode
             mov ebx, TYPE WORD
             invoke WriteHexB
-            ret
-        .elseif bl == mem_type
+            
+        .elseif bl == reg_type && bh == imm_type 
+            mov edi, (Operand PTR[edi]).address; TODO store as 32bits value
+            mov eax, (ImmOperand PTR[edi]).value
+            mov immediate, eax
+            mov esi, (Operand PTR[esi]).address
+            mov al, (RegOperand PTR[esi]).value
+            add opcode, al
+            
+            mov al, opcode
+            mov ebx, TYPE BYTE
+            invoke WriteHexB
+
+            mov eax, immediate
+            mov ebx, TYPE DWORD
+            invoke WriteHexB 
             ;return ax
+        .elseif (bl == mem_type && bh == reg_type) || (bl == reg_type && bh == mem_type)
+            .if bl == mem_type
+                mov esi, operand_two_address ; esi points to register
+                mov edi, operand_one_address
+            .endif
+            mov esi, (Operand PTR[esi]).address
+            mov edi, (Operand PTR[edi]).address ;global address
+
+            mov al, 0
+            mov mod_, al
+            mov al, (RegOperand PTR[esi]).value
+            mov reg_, al
+            mov al, 110b
+            mov rm_, al
+
+            shl mod_, 6
+            shl reg_, 3
+            mov al, 0
+            add al, mod_
+            add al, reg_
+            add al, rm_
+            mov modRM, al
+
+            mov displacement, edi
+
+            mov al, opcode
+            mov ebx, TYPE BYTE
+            invoke WriteHexB
+
+            mov al, modRM
+            mov ebx, TYPE BYTE
+            invoke WriteHexB
+
+            mov eax, displacement
+            mov ebx, TYPE DWORD
+            invoke WriteHexB 
+         ;TODO indirect type 在search table 中要处理为reg_or_mem_type
+        .elseif bl == indirect_type && bh == imm_type; Whether valid
+
+        .elseif (bl == indirect_type && bh == reg_type) || (bl == reg_type && bh == indirect)
+            .if bl == indirect_type
+                mov esi, operand_two_address    ;reg
+                mov edi, operand_one_address
+                mov al, 0
+                mov mod_, al
+                
+                mov esi, (Operand PTR[esi]).address
+                mov edi, (Operand PTR[edi]).address
+
+                mov al, (RegOperand PTR[esi]).value
+                mov reg_, al 
+
+                mov al, (RegOperand PTR[edi]).value
+                mov rm_, al
+
+                shl mod_, 6
+                shl reg_, 3
+                mov al, 0
+                add al, mod_
+                add al, reg_
+                add al, rm_
+                mov modRM, al
+
+                mov al, opcode
+                mov ebx, TYPE BYTE
+                invoke WriteHexB
+
+                mov al, modRM
+                mov ebx, TYPE BYTE
+                invoke WriteHexB
+            .endif
+
         .endif
     .endif
 
