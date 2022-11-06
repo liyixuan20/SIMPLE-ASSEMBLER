@@ -19,11 +19,10 @@ errormsg1 BYTE "Error:No Base!"
 ;判断该间接寻址字段的类型，base、index*scale、displacement
 judge_string_type PROC USES eax ebx ecx edx esi, 
     part_order: BYTE,
-    string_len: BYTE,
+    string_len: DWORD,
     flag: PTR BYTE
 
-    LOCAL tmp_flag: BYTE, tmp_flagn:BYTE, address:PTR BYTE
-    mov tmp_flag, 0
+    LOCAL tmp_flag: BYTE, tmp_flagn:BYTE, address:PTR BYTE, tmp_terminal:BYTE
     mov tmp_flagn, 0
     mov tmp_terminal, 0
     .IF part_order == 0
@@ -41,15 +40,15 @@ judge_string_type PROC USES eax ebx ecx edx esi,
 L1:
     mov bl, [esi]
     .IF (bl >= 65) && (bl <= 90) && (tmp_flagn == 0)
-        tmp_flag = 1
-        tmp_terminal = 1
+        mov tmp_flag, 1
+        mov tmp_terminal, 1                
     .ELSEIF (bl >=48) && (bl <= 57) && (tmp_flag == 0)
-        tmp_flagn = 1
-        tmp_terminal = 2
+        mov tmp_flagn, 1
+        mov tmp_terminal, 2
     .ELSEIF (bl >= 65) && (bl <= 90) && (tmp_flagn == 1)
-        tmp_terminal = 3
+        mov tmp_terminal, 3
     .ELSEIF (bl >=48) && (bl <= 57) && (tmp_flag == 1)
-        tmp_terminal = 3
+        mov tmp_terminal, 3
     .ELSE
         inc esi
         loop L1
@@ -115,8 +114,7 @@ parse_index_scale PROC USES eax ebx ecx edx esi edi,
     mov ecx, string_len
     mov edx, OFFSET str_scale
     mov edi, OFFSET str_index
-    INVOKE ClearString, edi
-    INVOKE ClearString, edx
+
 L1:
     mov bl, [esi]
     .IF (bl >= '0') && (bl <= '9')
@@ -160,8 +158,8 @@ NextL1:
 parse_index_scale ENDP
 
 add_byte_to_string PROC USES ebx esi,
-    value:BYTE
-    pos:DWORD
+    value:BYTE,
+    pos:DWORD,
     count:BYTE
 
     .IF count == 0
@@ -215,7 +213,7 @@ parse_indirect_address PROC USES eax ebx ecx edx esi,
         mov flag_disp, 0
         mov flag_base, 0
         mov flag_ind, 0
-
+L1:
         .IF ((bl >= 'A') && (bl <= 'Z')) || ((bl >= '0') && (bl <= '9')) || (bl == '*') || (bl == '+') || (bl == '-')
             .IF ((bl == '+') || (bl == '-')) && (str1 != 0)
                 inc count
@@ -246,7 +244,7 @@ Next_L1:
 
     INVOKE judge_string_type, 0, str0, ADDR type0
     .IF type0 == 1
-        mov flag_base == 1
+        mov flag_base, 1
         INVOKE get_reg_num, ADDR string_part_fir
         .IF al >= 8
             ret
@@ -272,7 +270,7 @@ Next_L1:
 
         INVOKE judge_string_type, 1, str1, ADDR type1
         .IF type1 == 1
-            mov flag_base == 1
+            mov flag_base, 1
             INVOKE get_reg_num, ADDR string_part_sec
             .IF al >= 8
                 ret
@@ -299,7 +297,7 @@ Next_L1:
 
         INVOKE judge_string_type, 2, str2, ADDR type2
         .IF type2 == 1
-            mov flag_base == 1
+            mov flag_base, 1
             INVOKE get_reg_num, ADDR string_part_thir
             .IF al >= 8
                 ret
@@ -339,6 +337,6 @@ Next_L1:
     mov [esi+4], al
 
     ret
-parse_index_scale ENDP
+parse_indirect_address ENDP
 
 END

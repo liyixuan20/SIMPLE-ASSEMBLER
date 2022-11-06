@@ -1,8 +1,7 @@
 .386
 .MODEL flat, stdcall
 
-include operand.inc
-include instruction_table.inc
+
 
 .data
 ; -------- tables begin here --------

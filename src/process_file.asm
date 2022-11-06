@@ -39,16 +39,16 @@ process_file PROC USES eax ebx ecx edx esi,
     mov max_bytes, 0
     mov edx, file_path
     call OpenInputFile
-    .IF eax = INVALID_HANDLE_VALUE
-        call WriteWindowMsg
+    .IF eax == INVALID_HANDLE_VALUE
+        call WriteWindowsMsg
         ret
     .ENDIF
 
     mov edx, OFFSET buffer
     mov ecx, BUFFER_SIZE
-    call ReadFromeFile
+    call ReadFromFile
     jnc success_read
-    call WriteWindowMsg
+    call WriteWindowsMsg
     ret
 
 success_read:
