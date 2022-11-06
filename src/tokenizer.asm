@@ -60,7 +60,7 @@ register_name_to_standard_operand PROC
     .if indirect_flag == 0
         mov [eax].op_type, reg_type
     .elseif indirect_flag == 1
-        mov [eax].op_type, mem_type ;TODO
+        mov [eax].op_type, indirect_type ;TODO
     .endif
     mov ecx, 0
     mov edx, offset register_to_binary_list
@@ -84,8 +84,8 @@ next:
         mov [eax].op_size, 4
     .endif
     mov esi, [eax].address
-    mov dx, (register_name_to_standard_operand PTR[edx]).binary_name
-    mov RegOperand PTR[esi].reg, dx
+    mov dl, (register_name_to_standard_operand PTR[edx]).binary_name
+    mov RegOperand PTR[esi].reg, dl
     ret
 register_name_to_standard_operand ENDP
 imm_to_standard_operand PROC
@@ -179,7 +179,7 @@ check_endp ENDP
 instruction_tokenizer PROC
     proc_start_context   :DWORD,
     code_end_context     :DWORD,
-    current_address      :DWORD,
+    current_address_pointer     :DWORD
 
     LOCAL   current_status      :BYTE,
             char                :BYTE,
@@ -237,7 +237,7 @@ instruction_tokenizer PROC
                 mov al, char
                 mov [esi], al
                 inc Operand_name_index
-                mov Operand_type, reg_or_mem_type
+                mov Operand_type, reg_or_mem_type ;eax data
 
                 mov esi, offset Operator_name
                 mov edi, offset standard_opeator
@@ -256,7 +256,7 @@ instruction_tokenizer PROC
                 mov al, char
                 mov [esi], al
                 inc Operand_name_index
-                mov Operand_type, imm_type
+                mov Operand_type, imm_type ;12
 
                 mov esi, offset Operator_name
                 mov edi, offset standard_opeator
@@ -270,7 +270,7 @@ instruction_tokenizer PROC
                 .endw
             .elseif char == '['
                 mov current_status, operand_one_status
-                mov indirect_flag, 1
+                mov indirect_flag, 1    ;indirect
             .elseif char == ':'
                 mov current_status, start_status
                 invoke process_jump_label, offset Operator_name, Operator_name_index, current_address
@@ -306,7 +306,7 @@ instruction_tokenizer PROC
                 invoke ClearString, offset Operand_name, Operand_name_index
                 mov Operand_name_index, 0
 
-                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 1; TODO
+                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 1, current_address_pointer; TODO
             .endif
         .elseif current_status == after_operand_one_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -330,7 +330,7 @@ instruction_tokenizer PROC
                 mov indirect_flag, 1
             .elseif char == 0 | char == 10 || char == 13
                 mov current_status, start_status
-                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 1; TODO
+                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 1, current_address_pointer; TODO
             .endif
         .elseif current_status == operand_two_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -352,7 +352,7 @@ instruction_tokenizer PROC
                 invoke ClearString, offset Operand_name, Operand_name_index
                 mov Operand_name_index, 0
                 mov indirect_flag, 0
-                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 2; TODO
+                invoke generate_binary_code, offset standard_opeator, offset srandard_operand_one, offset standard_operand_two, 2, current_address_pointer; TODO
             .endif
         .endif
     .endw
@@ -420,7 +420,7 @@ code_tokenizer PROC
                 .if eax == 1
                     mov edi, start_context
                     add edi, max_length
-                    invoke instruction_tokenizer, edx, edi, address_space; Pay attention to the following inc ecx
+                    invoke instruction_tokenizer, edx, edi, offset address_space; Pay attention to the following inc ecx
                 .endif
         .endif 
         inc ecx
