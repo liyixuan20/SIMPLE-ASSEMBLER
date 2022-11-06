@@ -19,7 +19,7 @@ find_symbol PROTO,
 judge_segment PROTO,
     address : PTR BYTE
 
-data_tokenizer PROTO,
+tokenize_data_segment PROTO,
     start_address: DWORD,
     max_bytes: DWORD
 

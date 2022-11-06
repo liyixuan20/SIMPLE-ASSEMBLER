@@ -42,7 +42,7 @@ convert_type_to_size ENDP
 
 
 
-data_tokenizer PROC USES ebx ecx edx esi edi,
+tokenize_data_segment PROC USES ebx ecx edx esi edi,
     start_address: DWORD,
     max_bytes: DWORD
 
@@ -204,7 +204,7 @@ loop_L1:
 end_tokenize:
 	mov eax, number_count
 	ret
-data_tokenizer ENDP
+tokenize_data_segment ENDP
 
 END
 
