@@ -109,7 +109,9 @@ generate_binary_code PROC,
     operand_one_address :PTR Operand,
     operand_two_address :PTR Operand,
     valid_oprand_count  :DWORD,
+
     current_address_pointer :DWORD
+
 
     LOCAL   opcode      :BYTE,
             encoded     :BYTE,
@@ -122,8 +124,10 @@ generate_binary_code PROC,
             immediate   :DWORD,
             total_bytes :DWORD
     
+
 	mov eax, 0
     mov total_bytes, eax
+
     .if valid_oprand_count == 2
         mov esi, operand_one_address
         mov edi, operand_two_address
@@ -162,7 +166,9 @@ generate_binary_code PROC,
             mov eax, (ImmOperand PTR[edi]).value
             mov immediate, eax
             mov esi, (Operand PTR[esi]).address
+
             mov al, (RegOperand PTR[esi]).reg
+
             add opcode, al
             
             mov al, opcode
@@ -185,7 +191,9 @@ generate_binary_code PROC,
 
             mov al, 0
             mov mod_, al
+
             mov al, (RegOperand PTR[esi]).reg
+
             mov reg_, al
             mov al, 110b
             mov rm_, al
@@ -216,7 +224,9 @@ generate_binary_code PROC,
          ;TODO indirect type 在search table 中要处理为reg_or_mem_type
         .elseif bl == indirect_type && bh == imm_type; Whether valid
 
+
         .elseif (bl == indirect_type && bh == reg_type) || (bl == reg_type && bh == indirect_type)
+
             .if bl == indirect_type
                 mov esi, operand_two_address    ;reg
                 mov edi, operand_one_address
@@ -230,6 +240,7 @@ generate_binary_code PROC,
                 mov reg_, al 
 
                 mov al, (RegOperand PTR[edi]).reg
+
                 mov rm_, al
 
                 shl mod_, 6
@@ -248,7 +259,9 @@ generate_binary_code PROC,
                 mov ebx, TYPE BYTE
                 invoke WriteHexB
                 mov eax, 2
+
                 mov total_bytes, eax
+
             .endif
 
         .endif
@@ -256,7 +269,9 @@ generate_binary_code PROC,
     ;TODO return total bytes in eax
     mov eax, total_bytes
 
+
     ret
 generate_binary_code ENDP
 
 END
+

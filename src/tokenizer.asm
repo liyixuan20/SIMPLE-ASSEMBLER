@@ -65,7 +65,10 @@ register_name_to_standard_operand PROC,
     .if indirect_flag == 0
         mov (Operand PTR[eax]).op_type, reg_type
     .elseif indirect_flag == 1
+
         mov (Operand PTR[eax]).op_type, indirect_type ;TODO
+
+
     .endif
     mov ecx, 0
     mov edx, offset register_to_binary_list
@@ -88,9 +91,12 @@ next:
     .elseif indirect_flag == 1
         mov (Operand PTR[eax]).op_size, 4
     .endif
+
     mov esi, (Operand PTR[eax]).address
     mov dl, (register_string_to_standard PTR[edx]).binary_name
     mov (RegOperand PTR[esi]).reg, dl
+
+
     ret
 register_name_to_standard_operand ENDP
 imm_to_standard_operand PROC,
@@ -329,7 +335,9 @@ instruction_tokenizer PROC,
                 invoke ClearString, addr Operand_name, Operand_name_index
                 mov Operand_name_index, 0
 
+
                 invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 1, current_address_pointer; TODO
+
             .endif
         .elseif current_status == after_operand_one_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -347,7 +355,9 @@ instruction_tokenizer PROC,
                 mov indirect_flag, 1
             .elseif char == 0 || char == 10 || char == 13
                 mov current_status, start_status
+
                 invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 1, current_address_pointer; TODO
+
             .endif
         .elseif current_status == operand_two_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -363,7 +373,9 @@ instruction_tokenizer PROC,
                 invoke ClearString, addr Operand_name, Operand_name_index
                 mov Operand_name_index, 0
                 mov indirect_flag, 0
+
                 invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 2, current_address_pointer; TODO
+
             .endif
         .endif
     .endw
@@ -423,7 +435,9 @@ L1:
                 .if (eax == 1)
                     mov edi, start_context
                     add edi, max_length
+
                     invoke instruction_tokenizer, edx, edi, addr address_space; Pay attention to the following inc ecx
+
                 .endif
 			.endif
         .else
