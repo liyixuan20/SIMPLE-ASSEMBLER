@@ -72,10 +72,10 @@ read_file:
     loop read_file
 
 process_dataseg:
-    INVOKE tokenize_data_segment, esi, max_bytes
+    INVOKE data_tokenizer, esi, max_bytes
     add esi, eax
 process_codeseg:
-    INVOKE tokenize_code_segment, esi, max_bytes
+    INVOKE code_tokenizer, esi, max_bytes
     ret
 process_file ENDP
 end
