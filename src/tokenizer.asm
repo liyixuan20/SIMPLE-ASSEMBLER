@@ -165,7 +165,7 @@ process_jump_label PROC,
 	current_address		:DWORD
 process_jump_label ENDP
 
-process_operand PROC,
+process_operand PROC USES ebx,
     operand_name        :DWORD,
     operand_name_len    :BYTE,
     operand_position    :BYTE,  
@@ -174,7 +174,7 @@ process_operand PROC,
 
 	
     
-	mov ebx,0
+	mov ebx, 0
     .if operand_type == imm_type
         .if operand_position == 1
             invoke imm_to_standard_operand, addr standard_operand_one, operand_name, operand_name_len
