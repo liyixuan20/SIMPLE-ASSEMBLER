@@ -133,18 +133,19 @@ register_name_to_standard_operand PROC,
     ret
 register_name_to_standard_operand ENDP
 
-imm_to_standard_operand PROC,
+imm_to_standard_operand PROC USES ecx, edx, ebx, esi, eax,
     operand_pointer     :DWORD,
     imm_name_pointer    :DWORD,
     imm_name_len        :BYTE
 
+    mov ecx, 0
     mov cl, imm_name_len
     mov edx, imm_name_pointer
-    invoke ParseInteger32
+    invoke ParseInteger32   ;return value in eax
 
     mov ebx, operand_pointer
     mov (operand PTR[ebx]).op_type, imm_type
-    mov (operand PTR[ebx]).op_size, 4   ;Simplified--all treated as bit32 integer
+    mov (operand PTR[ebx]).op_size, 4   ;Simplified--all treated as 32bits integer
     
     mov esi, (operand PTR[ebx]).address
     mov (ImmOperand PTR[esi]).value, eax
@@ -169,7 +170,7 @@ process_operand PROC,
     operand_name_len    :BYTE,
     operand_position    :BYTE,  
     indirect_flag       :BYTE,
-    operand_type        :BYTE ;Test
+    operand_type        :BYTE
 
 	
     
@@ -177,6 +178,8 @@ process_operand PROC,
     .if operand_type == imm_type
         .if operand_position == 1
             invoke imm_to_standard_operand, addr standard_operand_one, operand_name, operand_name_len
+        .elseif operand_position == 2
+            invoke imm_to_standard_operand, addr standard_operand_two, operand_name, operand_name_len
     ;invoke find_symbol, addr data_symbol_list, addr operand_name
     .if ebx != 0
         .if operand_position == 1
