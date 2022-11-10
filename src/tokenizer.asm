@@ -204,9 +204,9 @@ process_operand PROC,
         .endif
     .endif
     ;invoke find_symbol, addr proc_symbol_list, addr operand_name;TODO
-    .if ebx != 0
+    ;.if ebx != 0
     ;TODO
-    .endif
+    ;.endif
     ;invoke find_symbol, addr code_symbol_list, addr operand_name
     .if ebx != 0
     ;TODO
