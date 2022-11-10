@@ -291,6 +291,10 @@ generate_binary_code PROC,
         .endif
     .endif
     ;TODO return total bytes in eax
+    mov al, 13
+    invoke WriteChar
+    mov al, 10
+    invoke WriteChar
     mov eax, total_bytes
 
     ret

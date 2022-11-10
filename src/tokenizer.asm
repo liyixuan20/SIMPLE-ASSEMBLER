@@ -267,8 +267,8 @@ Write_at PROC,
 	popad
 	ret
 Write_at ENDP
-
-instruction_tokenizer PROC,
+ 
+instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
     proc_start_context   :DWORD,
     code_end_context     :DWORD,
     current_address_pointer     :DWORD
@@ -284,7 +284,7 @@ instruction_tokenizer PROC,
             Operand_type        :BYTE,
             indirect_flag       :BYTE,
 			endp_flag			:BYTE
-    pushad
+    
     mov eax, offset operand_one_buffer
     mov standard_operand_one.address, eax
     mov eax, offset operand_two_buffer
