@@ -4,7 +4,7 @@ operator_mapping_list STRUCT
 operator_mapping_list ENDS
 
 operator_mapping_element STRUCT
-    operator_name           BYTE 10 DUP(?)
+    operator_name           BYTE 8 DUP(?)
     len                    DWORD ?
     start_of_related_list  DWORD ?
 operator_mapping_element ENDS

@@ -28,6 +28,32 @@ inter_table operator_mapping_element <"ADD", 11, offset add_table>
 aggregate_table operator_mapping_list <1, offset inter_table>
 
 .code
+operator_compare PROC,
+	op1	:DWORD,
+	op2	:DWORD
+
+	LOCAL flag :DWORD
+
+	pushad
+	mov ecx, 3
+	mov edi, op1
+	mov esi, op2
+	mov ebx, 1
+L1:
+	mov al, [edi]
+	mov ah, [esi]
+	.if al != ah
+		mov ebx, 0
+	.endif
+	inc edi
+	inc esi
+	loop L1
+	mov flag, ebx
+	popad
+	mov ebx, flag
+	ret
+operator_compare ENDP
+
 find_opcode PROC,
     operator_address    :PTR BYTE,
     operand_one_type    :BYTE,
@@ -47,16 +73,18 @@ find_opcode PROC,
 
     mov eax, operator_address
     .while edx < ecx
-        invoke Str_compare, eax, esi
-        je next
+        invoke operator_compare, eax, esi 
+        .if ebx == 1
+			jmp next
+		.endif
         inc edx
         add esi, sizeof operator_mapping_element
     .endw
     ;process error TODO
 next:
     ;esi points to the correct concrete table
-    mov ecx, [esi + 10]
-    mov esi, [esi + 14]
+    mov ecx, [esi + 8] ;len of MOV list
+    mov esi, [esi + 12] ;start of MOV list
 
     mov al, operand_one_type
     mov ah, operand_two_type
@@ -66,21 +94,27 @@ next:
     .if ah == indirect_type
         mov ah, reg_or_mem_type
     .endif
-    mov dl, [esi+2] ;size
-    mov dh, [esi+4]
+   
+    mov edx, 0
     .while edx < ecx
         mov bl, [esi+1];type
         mov bh, [esi+3]
         .if (al == bl) && (ah == bh)
-            .if (operand_one_size == dl) && (operand_two_size == dh)
+            mov bl, [esi+2]
+            mov bh, [esi+4]
+            .if (operand_one_size == bl) && (operand_two_size == bh)
                 jmp next2
             .endif
         .elseif (bl == reg_or_mem_type && (al == reg_type || al == mem_type)) && (ah == bh)
-            .if (operand_one_size == dl) && (operand_two_size == dh)
+            mov bl, [esi+2]
+            mov bh, [esi+4]
+            .if (operand_one_size == bl) && (operand_two_size == bh)
                 jmp next2
             .endif
         .elseif (al == bl) && ((ah == reg_type || ah == mem_type) && bh == reg_or_mem_type)
-            .if (operand_one_size == dl) && (operand_two_size == dh)
+            mov bl, [esi+2]
+            mov bh, [esi+4]
+            .if (operand_one_size == bl) && (operand_two_size == bh)
                 jmp next2
             .endif
         .endif
@@ -89,14 +123,15 @@ next:
     .endw
 next2:
     ;esi points to the correct item
-    mov bl, [esi]
-    mov opcode, bl
 
-    mov bl, [esi+5]
-    mov encoded, bl
+    mov bh, [esi]
+    mov opcode, bh
 
-    mov bl, [esi+6]
-    mov digit, bl
+    mov bh, [esi+5]
+    mov encoded, bh
+
+    mov bh, [esi+6]
+    mov digit, bh
     popad  
     mov al, opcode
     mov ah, encoded
@@ -109,9 +144,7 @@ generate_binary_code PROC,
     operand_one_address :PTR Operand,
     operand_two_address :PTR Operand,
     valid_oprand_count  :DWORD,
-
     current_address_pointer :DWORD
-
 
     LOCAL   opcode      :BYTE,
             encoded     :BYTE,
@@ -124,10 +157,8 @@ generate_binary_code PROC,
             immediate   :DWORD,
             total_bytes :DWORD
     
-
 	mov eax, 0
     mov total_bytes, eax
-
     .if valid_oprand_count == 2
         mov esi, operand_one_address
         mov edi, operand_two_address
@@ -136,10 +167,12 @@ generate_binary_code PROC,
         mov cl, (Operand PTR[esi]).op_size
         mov ch, (Operand PTR[edi]).op_size
 
+		pushad
         invoke find_opcode, operator_address, bl, bh, cl, ch; return opcode:
         mov opcode, al
         mov encoded, ah
         mov digit, bl
+		popad
         
         .if bl == reg_type && bh == reg_type
             mov mod_, 3 ;11b
@@ -166,9 +199,7 @@ generate_binary_code PROC,
             mov eax, (ImmOperand PTR[edi]).value
             mov immediate, eax
             mov esi, (Operand PTR[esi]).address
-
             mov al, (RegOperand PTR[esi]).reg
-
             add opcode, al
             
             mov al, opcode
@@ -191,9 +222,7 @@ generate_binary_code PROC,
 
             mov al, 0
             mov mod_, al
-
             mov al, (RegOperand PTR[esi]).reg
-
             mov reg_, al
             mov al, 110b
             mov rm_, al
@@ -224,9 +253,7 @@ generate_binary_code PROC,
          ;TODO indirect type 在search table 中要处理为reg_or_mem_type
         .elseif bl == indirect_type && bh == imm_type; Whether valid
 
-
         .elseif (bl == indirect_type && bh == reg_type) || (bl == reg_type && bh == indirect_type)
-
             .if bl == indirect_type
                 mov esi, operand_two_address    ;reg
                 mov edi, operand_one_address
@@ -240,7 +267,6 @@ generate_binary_code PROC,
                 mov reg_, al 
 
                 mov al, (RegOperand PTR[edi]).reg
-
                 mov rm_, al
 
                 shl mod_, 6
@@ -259,9 +285,7 @@ generate_binary_code PROC,
                 mov ebx, TYPE BYTE
                 invoke WriteHexB
                 mov eax, 2
-
                 mov total_bytes, eax
-
             .endif
 
         .endif
@@ -269,9 +293,7 @@ generate_binary_code PROC,
     ;TODO return total bytes in eax
     mov eax, total_bytes
 
-
     ret
 generate_binary_code ENDP
 
 END
-
