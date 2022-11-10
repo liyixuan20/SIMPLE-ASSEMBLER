@@ -14,5 +14,12 @@
 
 ### 演示
 
-### 项目源码
-https://github.com/liyixuan20/SIMPLE-ASSEMBLER
+### 程序运行方式
+
+命令行中运行以下命令
+
+`Project1.exe  `+汇编测试文件绝对路径
+
+例如
+
+`Project1.exe D:/test.txt`
