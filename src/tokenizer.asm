@@ -56,7 +56,7 @@ myStringCompare PROC,
         mov ecx, 2
     .endif
     mov ebx, 1
-L1:
+    L1:
     mov al, [edi]
     mov ah, [esi]
     .if al != ah
@@ -115,7 +115,7 @@ register_name_to_standard_operand PROC,
         inc ecx
         add edi, sizeof register_string_to_standard
     .endw
-next:
+    next:
     .if indirect_flag == 0
         .if ecx < 8
             mov (Operand PTR[eax]).op_size, 1
@@ -132,12 +132,13 @@ next:
     mov (RegOperand PTR[esi]).reg, dl
     ret
 register_name_to_standard_operand ENDP
+
 imm_to_standard_operand PROC,
     operand_pointer     :DWORD,
     imm_name_pointer    :DWORD,
-    imm_name_len        :DWORD
+    imm_name_len        :BYTE
 
-    mov ecx, imm_name_len
+    mov cl, imm_name_len
     mov edx, imm_name_pointer
     invoke ParseInteger32
 
@@ -167,11 +168,15 @@ process_operand PROC,
     operand_name        :DWORD,
     operand_name_len    :BYTE,
     operand_position    :BYTE,  
-    indirect_flag       :BYTE   
+    indirect_flag       :BYTE,
+    operand_type        :BYTE
 
 	
     
 	mov ebx,0
+    .if operand_type == imm_type
+        .if operand_position == 1
+            invoke imm_to_standard_operand, addr standard_operand_one, operand_name, operand_name_len
     ;invoke find_symbol, addr data_symbol_list, addr operand_name
     .if ebx != 0
         .if operand_position == 1
@@ -223,6 +228,7 @@ check_proc_label PROC,   ;True:eax=1   False:eax=0
         mov eax, 1
         ret
 check_proc_label ENDP
+
 check_endp PROC USES eax,
     operand_name    :DWORD
 	push ebx
@@ -242,6 +248,7 @@ check_endp PROC USES eax,
 	
     ret
 check_endp ENDP
+
 Write_at PROC,
 	base :DWORD,
 	index:BYTE,
@@ -382,7 +389,7 @@ instruction_tokenizer PROC,
                     jmp final
                 .endif
                 push edx
-                invoke process_operand, addr Operand_name, Operand_name_index, 1,  indirect_flag
+                invoke process_operand, addr Operand_name, Operand_name_index, 1,  indirect_flag, Operand_type
                 invoke ClearString, addr Operand_name, Operand_name_index
                 mov Operand_name_index, 0
                 mov indirect_flag, 0
@@ -391,7 +398,7 @@ instruction_tokenizer PROC,
             .elseif char == 0 || char == 10 || char == 13
             ;todo maybe endp
                 mov current_status, start_status
-                invoke process_operand, addr Operand_name, Operand_name_index, 1 , indirect_flag
+                invoke process_operand, addr Operand_name, Operand_name_index, 1 , indirect_flag, Operand_type
                 invoke ClearString, addr Operand_name, Operand_name_index
                 mov Operand_name_index, 0
 
@@ -424,7 +431,7 @@ instruction_tokenizer PROC,
                 inc Operand_name_index
             .elseif char == ' ' || char == 0 || char == 10 || char == 13 || char == ']'
                 mov current_status, start_status
-                invoke process_operand, addr Operand_name, Operand_name_index, 2, indirect_flag
+                invoke process_operand, addr Operand_name, Operand_name_index, 2, indirect_flag, Operand_type
 
                 invoke ClearString, addr Operand_name, Operand_name_index
                 mov Operand_name_index, 0
@@ -434,7 +441,7 @@ instruction_tokenizer PROC,
             .endif
         .endif
     .endw
-final:
+    final:
         ret
 instruction_tokenizer ENDP
 
@@ -456,7 +463,7 @@ code_tokenizer PROC,
     mov edx, start_context
     mov ecx, 0
     mov current_status, start_status
-L1:
+    L1:
 		push eax
 		mov al, BYTE PTR[edx]
         mov char, al
