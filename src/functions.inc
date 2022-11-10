@@ -59,13 +59,14 @@ register_name_to_standard_operand PROTO,
 imm_to_standard_operand PROTO,
     operand_pointer     :DWORD,
     imm_name_pointer    :DWORD,
-    imm_name_len        :DWORD
+    imm_name_len        :BYTE
 
 process_operand PROTO,
     operand_name        :DWORD,
     operand_name_len    :BYTE,
     operand_position    :BYTE,  
-    indirect_flag       :BYTE
+    indirect_flag       :BYTE,
+    operand_type        :BYTE
 
 check_proc_label PROTO,  ;True:eax=1   False:eax=0
     proc_label_address: DWORD
