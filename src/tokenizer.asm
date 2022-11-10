@@ -152,10 +152,18 @@ imm_to_standard_operand PROC USES ecx edx ebx esi eax,
     ret
 imm_to_standard_operand ENDP
 
-data_name_to_standard_operand PROC,
+data_name_to_standard_operand PROC USES edi esi eax,
 	operand_address	:DWORD,
-	operand_name_address :DWORD
-	;TODO
+	operand_info    :DWORD
+
+    mov edi, operand_address
+    mov esi, operand_info
+
+    mov (Operand PTR[edi]).op_type, data_type;op_type
+    mov eax, (Symbol_Elem PTR[esi]).op_size ;op_size
+    mov (Operand PTR[edi]).op_size, eax
+    mov eax, (Symbol_Elem PTR[esi]).address ;address
+    mov (Operand PTR[edi]).address, eax
 	ret
 data_name_to_standard_operand ENDP
 
@@ -175,6 +183,7 @@ process_operand PROC,
 	
     
 	mov ebx,0
+    ;Case 1:imm_type
     .if operand_type == imm_type
         .if operand_position == 1
             invoke imm_to_standard_operand, addr standard_operand_one, operand_name, operand_name_len
@@ -183,20 +192,21 @@ process_operand PROC,
         .endif
         ret
     .endif
-    ;invoke find_symbol, addr data_symbol_list, addr operand_name
+    ;Case 2:data_label
+    invoke find_symbol, addr data_symbol_list, addr operand_name
     .if ebx != 0
         .if operand_position == 1
-            invoke data_name_to_standard_operand, addr standard_operand_one, addr operand_name
+            invoke data_name_to_standard_operand, addr standard_operand_one, ebx
             ret
         .elseif operand_position == 2
-            invoke data_name_to_standard_operand, addr standard_operand_two, addr operand_name
+            invoke data_name_to_standard_operand, addr standard_operand_two, ebx
             ret
         .endif
     .endif
     ;invoke find_symbol, addr proc_symbol_list, addr operand_name;TODO
-    .if ebx != 0
+    ;.if ebx != 0
     ;TODO
-    .endif
+    ;.endif
     ;invoke find_symbol, addr code_symbol_list, addr operand_name
     .if ebx != 0
     ;TODO

@@ -212,7 +212,7 @@ generate_binary_code PROC,
             mov eax, 5
             mov total_bytes, eax
             ;return ax
-        .elseif (bl == mem_type && bh == reg_type) || (bl == reg_type && bh == mem_type)
+        .elseif (bl == data_type && bh == reg_type) || (bl == reg_type && bh == data_type)
             .if bl == mem_type
                 mov esi, operand_two_address ; esi points to register
                 mov edi, operand_one_address
