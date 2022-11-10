@@ -40,7 +40,7 @@ register_string_to_standard<"esp",4>
 register_string_to_standard<"ebp",5>
 .code
 
-myStringCompare PROC USES eax ecx edi ,
+myStringCompare PROC USES eax ecx edi ebx,
 	start_address	:DWORD,
 	start_address_t	:DWORD
 	
@@ -180,6 +180,9 @@ process_operand PROC,
             invoke imm_to_standard_operand, addr standard_operand_one, operand_name, operand_name_len
         .elseif operand_position == 2
             invoke imm_to_standard_operand, addr standard_operand_two, operand_name, operand_name_len
+        .endif
+        ret
+    .endif
     ;invoke find_symbol, addr data_symbol_list, addr operand_name
     .if ebx != 0
         .if operand_position == 1
