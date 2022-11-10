@@ -28,14 +28,15 @@ push_symbol_list PROC USES ebx  edx esi edi,
     LOCAL len:dword
     mov edx, list_offset
 
-    inc (Symbol_List PTR[edx]).len
+    
     mov eax, (Symbol_List PTR[edx]).len
     mov len, eax
+	
     .IF len > 256
         mov eax, -1
         ret
     .ENDIF
-    
+    inc (Symbol_List PTR[edx]).len
     mov ebx, (Symbol_List PTR[edx]).address
     mov eax, 0
     mov eax, sizeof Symbol_Elem
@@ -64,17 +65,22 @@ find_symbol PROC USES eax ecx edx esi edi,  ;return the address stored in ebx
 
     LOCAL len:dword
 
+	mov len, 0
     mov edx, list_offset
     mov eax, (Symbol_List PTR[edx]).len
     mov len, eax
-    
+
     mov ecx, 0
-    mov ecx, len
+	mov ecx, len
     mov eax, 0
     mov ebx, (Symbol_List PTR[edx]).address
 
     L1:
         lea esi, (Symbol_Elem PTR[ebx]).symbol_name
+        ;mov edx, esi
+		;invoke WriteString
+        ;mov edx, symbolname
+        ;invoke WriteString
         invoke Str_compare, esi, symbolname
         je find
 

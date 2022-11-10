@@ -160,8 +160,8 @@ data_name_to_standard_operand PROC USES edi esi eax,
     mov esi, operand_info
 
     mov (Operand PTR[edi]).op_type, data_type;op_type
-    mov eax, (Symbol_Elem PTR[esi]).op_size ;op_size
-    mov (Operand PTR[edi]).op_size, eax
+    mov al, (Symbol_Elem PTR[esi]).op_size ;op_size
+    mov (Operand PTR[edi]).op_size, al
     mov eax, (Symbol_Elem PTR[esi]).address ;address
     mov (Operand PTR[edi]).address, eax
 	ret
@@ -173,7 +173,7 @@ process_jump_label PROC,
 	current_address		:DWORD
 process_jump_label ENDP
 
-process_operand PROC,
+process_operand PROC USES ebx,
     operand_name        :DWORD,
     operand_name_len    :BYTE,
     operand_position    :BYTE,  
@@ -193,7 +193,7 @@ process_operand PROC,
         ret
     .endif
     ;Case 2:data_label
-    invoke find_symbol, addr data_symbol_list, addr operand_name
+    invoke find_symbol, addr data_symbol_list, operand_name
     .if ebx != 0
         .if operand_position == 1
             invoke data_name_to_standard_operand, addr standard_operand_one, ebx
@@ -203,11 +203,11 @@ process_operand PROC,
             ret
         .endif
     .endif
-    ;invoke find_symbol, addr proc_symbol_list, addr operand_name;TODO
+    ;invoke find_symbol, addr proc_symbol_list,  operand_name;TODO
     ;.if ebx != 0
     ;TODO
     ;.endif
-    ;invoke find_symbol, addr code_symbol_list, addr operand_name
+    ;invoke find_symbol, addr code_symbol_list, operand_name
     .if ebx != 0
     ;TODO
     .endif
@@ -296,8 +296,11 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
             Operand_name_index  :BYTE,
             Operand_type        :BYTE,
             indirect_flag       :BYTE,
-			endp_flag			:BYTE
-    
+			endp_flag			:BYTE,
+			buffer_length		:BYTE
+
+	mov buffer_length, 20
+    invoke ClearString, addr Operand_name, buffer_length
     mov eax, offset operand_one_buffer
     mov standard_operand_one.address, eax
     mov eax, offset operand_two_buffer
@@ -406,7 +409,7 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
                 .endif
                 push edx
                 invoke process_operand, addr Operand_name, Operand_name_index, 1,  indirect_flag, Operand_type
-                invoke ClearString, addr Operand_name, Operand_name_index
+                invoke ClearString, addr Operand_name, buffer_length
                 mov Operand_name_index, 0
                 mov indirect_flag, 0
 				mov current_status, after_operand_one_status
@@ -415,7 +418,7 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
             ;todo maybe endp
                 mov current_status, start_status
                 invoke process_operand, addr Operand_name, Operand_name_index, 1 , indirect_flag, Operand_type
-                invoke ClearString, addr Operand_name, Operand_name_index
+                invoke ClearString, addr Operand_name, buffer_length
                 mov Operand_name_index, 0
 
                 invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 1, current_address_pointer; TODO
@@ -449,7 +452,7 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
                 mov current_status, start_status
                 invoke process_operand, addr Operand_name, Operand_name_index, 2, indirect_flag, Operand_type
 
-                invoke ClearString, addr Operand_name, Operand_name_index
+                invoke ClearString, addr Operand_name,buffer_length
                 mov Operand_name_index, 0
                 mov indirect_flag, 0
                 invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 2, current_address_pointer; TODO
