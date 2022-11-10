@@ -40,12 +40,12 @@ register_string_to_standard<"esp",4>
 register_string_to_standard<"ebp",5>
 .code
 
-myStringCompare PROC,
+myStringCompare PROC USES eax ecx edi ,
 	start_address	:DWORD,
 	start_address_t	:DWORD
 	
 	LOCAL flag		:DWORD
-	pushad
+	
     mov edi, start_address
     mov esi, start_address_t
 
@@ -66,17 +66,17 @@ myStringCompare PROC,
 	inc esi
     loop L1
     mov flag, ebx
-    popad
+    
     mov esi, flag
     ret
 
 myStringCompare ENDP
 
-ClearString PROC,
+ClearString PROC USES ecx eax esi,
     start_address   :DWORD,
     len             :BYTE
 
-    pushad
+    
     mov cl, 0
     mov esi, start_address
     .while cl < len
@@ -85,11 +85,11 @@ ClearString PROC,
         inc esi
         inc cl
     .endw
-	popad
+	
 	ret
 ClearString ENDP
 
-register_name_to_standard_operand PROC,
+register_name_to_standard_operand PROC USES eax ebx ecx edx edi esi,
     operand_pointer      :DWORD,
     operand_name_pointer :DWORD,
     indirect_flag        :BYTE
@@ -133,7 +133,7 @@ register_name_to_standard_operand PROC,
     ret
 register_name_to_standard_operand ENDP
 
-imm_to_standard_operand PROC USES ecx, edx, ebx, esi, eax,
+imm_to_standard_operand PROC USES ecx edx ebx esi eax,
     operand_pointer     :DWORD,
     imm_name_pointer    :DWORD,
     imm_name_len        :BYTE
@@ -268,7 +268,7 @@ Write_at PROC,
 	ret
 Write_at ENDP
 
-instruction_tokenizer PROC,
+instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
     proc_start_context   :DWORD,
     code_end_context     :DWORD,
     current_address_pointer     :DWORD
@@ -284,7 +284,7 @@ instruction_tokenizer PROC,
             Operand_type        :BYTE,
             indirect_flag       :BYTE,
 			endp_flag			:BYTE
-    pushad
+    
     mov eax, offset operand_one_buffer
     mov standard_operand_one.address, eax
     mov eax, offset operand_two_buffer
