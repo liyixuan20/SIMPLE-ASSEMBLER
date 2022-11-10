@@ -39,7 +39,7 @@ operator_compare PROC,
 	mov edi, op1
 	mov esi, op2
 	mov ebx, 1
-L1:
+    L1:
 	mov al, [edi]
 	mov ah, [esi]
 	.if al != ah
@@ -81,7 +81,7 @@ find_opcode PROC,
         add esi, sizeof operator_mapping_element
     .endw
     ;process error TODO
-next:
+    next:
     ;esi points to the correct concrete table
     mov ecx, [esi + 8] ;len of MOV list
     mov esi, [esi + 12] ;start of MOV list
@@ -121,7 +121,7 @@ next:
         inc edx
         add esi, sizeof operand_mapping_element
     .endw
-next2:
+    next2:
     ;esi points to the correct item
 
     mov bh, [esi]
