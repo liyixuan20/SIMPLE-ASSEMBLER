@@ -169,7 +169,7 @@ process_operand PROC,
     operand_name_len    :BYTE,
     operand_position    :BYTE,  
     indirect_flag       :BYTE,
-    operand_type        :BYTE
+    operand_type        :BYTE ;Test
 
 	
     
