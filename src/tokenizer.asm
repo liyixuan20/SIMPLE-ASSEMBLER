@@ -150,6 +150,26 @@ register_name_to_standard_operand PROC USES eax ebx ecx edx edi esi,
     ret
 register_name_to_standard_operand ENDP
 
+register_name_to_binary_encoding PROC USES ecx ebx edi esi, ;return in edx(dl)
+    register_name   :DWORD
+
+    mov ecx, 0
+    mov edi, offset register_to_binary_list
+    mov ebx, register_name
+    .while ecx < 24
+        invoke myStringCompare, ebx, edi
+        .if esi == 1
+            jmp next
+        .endif
+        inc ecx
+        add edi, sizeof register_string_to_standard
+    .endw
+    next:
+        mov edx, 0
+        mov dl, (register_string_to_standard PTR[edi]).binary_name
+    ret
+register_name_to_binary_encoding ENDP
+
 imm_to_standard_operand PROC USES ecx edx ebx esi eax,
     operand_pointer     :DWORD,
     imm_name_pointer    :DWORD,
@@ -297,6 +317,44 @@ Write_at PROC,
 	popad
 	ret
 Write_at ENDP
+
+ProcessSIB PROC USES edi ecx edx eax,
+    scaleAdd    :DWORD,
+    indexAdd    :DWORD,
+    baseAdd     :DWORD,
+    operand_posi:BYTE
+
+    .if operand_posi == 1
+        mov edi, offset standard_operand_one
+    .elseif operand_posi == 2
+        mov edi, offset standard_operand_two
+    .endif
+
+    mov (Operand PTR[edi]).op_type, sib_type
+    
+    mov ecx, 1      ;scale
+    mov edx, scaleAdd
+    invoke ParseInteger32 
+    .if eax == 1
+        mov eax, 0
+    .elseif eax == 2
+        mov eax, 1
+    .elseif eax == 4
+        mov eax, 2
+    .elseif eax == 8
+        mov eax, 3
+    .endif          
+    shl eax, 6      ;scale
+    invoke register_name_to_binary_encoding, indexAdd
+    shl edx, 3
+    add eax, edx
+    invoke register_name_to_binary_encoding, baseAdd
+    add eax, edx
+
+    mov edi, (Operand PTR[edi]).address
+    mov (RegOperand PTR[edi]).reg, al
+    ret
+ProcessSIB ENDP
 
 instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
     proc_start_context   :DWORD,
