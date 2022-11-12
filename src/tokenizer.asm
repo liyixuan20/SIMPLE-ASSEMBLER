@@ -40,6 +40,23 @@ register_string_to_standard<"esp",4>
 register_string_to_standard<"ebp",5>
 .code
 
+StringCopy PROC,
+    fromAdd     :DWORD,
+    toAdd       :DWORD,
+    copy_len    :BYTE
+
+    mov ecx, 0
+    mov cl, copy_len
+    mov edi, fromAdd
+    mov esi, toAdd
+    L1:
+        mov al, [edi]
+        mov [esi], al
+        inc edi
+        inc esi
+        loop L1
+StringCopy ENDP
+
 myStringCompare PROC USES eax ecx edi ebx,
 	start_address	:DWORD,
 	start_address_t	:DWORD
@@ -133,6 +150,26 @@ register_name_to_standard_operand PROC USES eax ebx ecx edx edi esi,
     ret
 register_name_to_standard_operand ENDP
 
+register_name_to_binary_encoding PROC USES ecx ebx edi esi, ;return in edx(dl)
+    register_name   :DWORD
+
+    mov ecx, 0
+    mov edi, offset register_to_binary_list
+    mov ebx, register_name
+    .while ecx < 24
+        invoke myStringCompare, ebx, edi
+        .if esi == 1
+            jmp next
+        .endif
+        inc ecx
+        add edi, sizeof register_string_to_standard
+    .endw
+    next:
+        mov edx, 0
+        mov dl, (register_string_to_standard PTR[edi]).binary_name
+    ret
+register_name_to_binary_encoding ENDP
+
 imm_to_standard_operand PROC USES ecx edx ebx esi eax,
     operand_pointer     :DWORD,
     imm_name_pointer    :DWORD,
@@ -169,9 +206,25 @@ data_name_to_standard_operand ENDP
 
 process_jump_label PROC,
 	operand_name_address :DWORD,
-	operand_name_index	:DWORD,
+	operand_name_index	:BYTE,
 	current_address		:DWORD
+
+    mov esi, code_symbol_list
+    invoke push_symbol_list, offset code_symbol_list, operand_name_address, current_address, 4
+    ret   
 process_jump_label ENDP
+
+code_label_to_standard_operand PROC USES edi esi eax,
+    operand_address :DWORD,
+    operand_info    :DWORD
+
+    mov edi, operand_address
+    mov esi, operand_info
+
+    mov eax, (Symbol_Elem PTR[esi]).address
+    mov (Operand PTR[edi]).address, eax
+    ret
+code_label_to_standard_operand ENDP
 
 process_operand PROC USES ebx,
     operand_name        :DWORD,
@@ -203,14 +256,18 @@ process_operand PROC USES ebx,
             ret
         .endif
     .endif
-    ;invoke find_symbol, addr proc_symbol_list,  operand_name;TODO
-    ;.if ebx != 0
-    ;TODO
-    ;.endif
-    ;invoke find_symbol, addr code_symbol_list, operand_name
+    ;Case 3:proc_label
+    invoke find_symbol, addr proc_symbol_list,  operand_name;TODO
     .if ebx != 0
-    ;TODO
+        invoke code_label_to_standard_operand, addr standard_operand_one, ebx
     .endif
+    ;Case 4:code_label
+    invoke find_symbol, addr code_symbol_list, operand_name
+    .if ebx != 0
+        invoke code_label_to_standard_operand, addr standard_operand_one, ebx
+        ret
+    .endif
+    ;Case 5:register
     .if operand_position == 1
         invoke register_name_to_standard_operand, addr standard_operand_one, operand_name, indirect_flag
         ret
@@ -281,7 +338,45 @@ Write_at PROC,
 	ret
 Write_at ENDP
 
-instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
+ProcessSIB PROC USES edi ecx edx eax,
+    scaleAdd    :DWORD,
+    indexAdd    :DWORD,
+    baseAdd     :DWORD,
+    operand_posi:BYTE
+
+    .if operand_posi == 1
+        mov edi, offset standard_operand_one
+    .elseif operand_posi == 2
+        mov edi, offset standard_operand_two
+    .endif
+
+    mov (Operand PTR[edi]).op_type, sib_type
+    
+    mov ecx, 1      ;scale
+    mov edx, scaleAdd
+    invoke ParseInteger32 
+    .if eax == 1
+        mov eax, 0
+    .elseif eax == 2
+        mov eax, 1
+    .elseif eax == 4
+        mov eax, 2
+    .elseif eax == 8
+        mov eax, 3
+    .endif          
+    shl eax, 6      ;scale
+    invoke register_name_to_binary_encoding, indexAdd
+    shl edx, 3
+    add eax, edx
+    invoke register_name_to_binary_encoding, baseAdd
+    add eax, edx
+
+    mov edi, (Operand PTR[edi]).address
+    mov (RegOperand PTR[edi]).reg, al
+    ret
+ProcessSIB ENDP
+
+instruction_tokenizer PROC USES  ebx ecx esi edi,   ;eax:current address edx current pointer
     proc_start_context   :DWORD,
     code_end_context     :DWORD,
     current_address_pointer     :DWORD
@@ -297,11 +392,15 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
             Operand_type        :BYTE,
             indirect_flag       :BYTE,
 			endp_flag			:BYTE,
-			buffer_length		:BYTE
+			buffer_length		:BYTE,
+            sib_flag            :BYTE,
+            scale[20]           :BYTE,
+            index[20]           :BYTE,
+            base[20]            :BYTE
 
 	mov buffer_length, 20
     invoke ClearString, addr Operand_name, buffer_length
-    mov eax, offset operand_one_buffer
+    mov eax, offset operand_one_buffer  ;build connection between standard operand and its buffer
     mov standard_operand_one.address, eax
     mov eax, offset operand_two_buffer
     mov standard_operand_two.address, eax
@@ -311,6 +410,11 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
     mov edx, proc_start_context
     mov current_status, start_status
     mov indirect_flag, 0
+
+    mov sib_flag, 0
+    invoke ClearString, addr scale, buffer_length
+    invoke ClearString, addr index, buffer_length
+    invoke ClearString, addr base, buffer_length
     .while edx < code_end_context
 		push eax
 		mov al, [edx]
@@ -384,8 +488,21 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
             .elseif char >= '0' && char <='9'
                 invoke Write_at, addr Operand_name, Operand_name_index, char
                 inc Operand_name_index
+            .elseif (char == ']') && (sib_flag == 1)
+                invoke StringCopy, addr Operand_name, addr scale, Operand_name_index
+                invoke ProcessSIB, addr scale, addr index, addr base, 1
+                invoke ClearString, addr Operand_name, buffer_length
+                invoke ClearString, addr base, buffer_length
+                invoke ClearString, addr index, buffer_length
+                invoke ClearString, addr scale, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
+                mov indirect_flag, al 
+                mov sib_flag, al
+				mov current_status, after_operand_one_status
             .elseif (char == ' ') || (char == ',') || (char == ']')
-                ;invoke check_endp, Operand_name
+                ;Begin check_endp
+                push eax
 				mov al, 0
 				mov endp_flag, al
 				push ebx
@@ -404,9 +521,11 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
 				.endif
 				pop edi
 				pop ebx
+                pop eax
                 .if endp_flag == 1
                     jmp final
                 .endif
+                ;End check_endp
                 push edx
                 invoke process_operand, addr Operand_name, Operand_name_index, 1,  indirect_flag, Operand_type
                 invoke ClearString, addr Operand_name, buffer_length
@@ -416,12 +535,49 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
 				pop edx
             .elseif char == 0 || char == 10 || char == 13
             ;todo maybe endp
+                ;Begin check_endp
+                push eax
+				mov al, 0
+				mov endp_flag, al
+				push ebx
+				push edi
+				lea edi, Operand_name
+				mov al, [edi]
+				mov ah, [edi+1]
+				mov bl, [edi+2]
+				mov bh, [edi+3]
+				.if (al == 'E') && (ah == 'N') && (bl == 'D') && (bh == 'P')
+					mov al, 1
+					mov endp_flag, al
+				.elseif (al == 'e') && (ah == 'n') && (bl == 'd') && (bh == 'p')
+					mov al, 1
+					mov endp_flag, al
+				.endif
+				pop edi
+				pop ebx
+                pop eax
+                .if endp_flag == 1
+                    jmp final
+                .endif
+                ;End check_endp
                 mov current_status, start_status
                 invoke process_operand, addr Operand_name, Operand_name_index, 1 , indirect_flag, Operand_type
                 invoke ClearString, addr Operand_name, buffer_length
                 mov Operand_name_index, 0
-
-                invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 1, current_address_pointer; TODO
+                invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 1, current_address_pointer
+                add current_address_pointer, eax
+                mov current_status, start_status
+            .elseif char == '+'
+                mov sib_flag, 1
+                invoke StringCopy, addr Operand_name, addr base, Operand_name_index
+                invoke ClearString, addr Operand_name, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
+            .elseif char == '*'
+                invoke StringCopy, addr Operand_name, addr index, Operand_name_index
+                invoke ClearString, addr Operand_name, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
             .endif
         .elseif current_status == after_operand_one_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -440,6 +596,7 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
             .elseif char == 0 || char == 10 || char == 13
                 mov current_status, start_status
                 invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 1, current_address_pointer; TODO
+                add current_address_pointer, eax
             .endif
         .elseif current_status == operand_two_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -448,6 +605,19 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
             .elseif (char >= '0' && char <= '9')
                  invoke Write_at, addr Operand_name, Operand_name_index, char
                 inc Operand_name_index
+            .elseif (char == ']') && (sib_flag == 1)
+                invoke StringCopy, addr Operand_name, addr scale, Operand_name_index
+                invoke ProcessSIB, addr scale, addr index, addr base, 2 ;Do not use processOperand, just use ProcessSIB
+                invoke ClearString, addr Operand_name, buffer_length
+                invoke ClearString, addr base, buffer_length
+                invoke ClearString, addr index, buffer_length
+                invoke ClearString, addr scale, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
+                mov indirect_flag, al
+                mov sib_flag, al
+				mov current_status, start_status
+                invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 2. current_address_pointer
             .elseif char == ' ' || char == 0 || char == 10 || char == 13 || char == ']'
                 mov current_status, start_status
                 invoke process_operand, addr Operand_name, Operand_name_index, 2, indirect_flag, Operand_type
@@ -456,11 +626,24 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
                 mov Operand_name_index, 0
                 mov indirect_flag, 0
                 invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 2, current_address_pointer; TODO
-				ret
+                add current_address_pointer, eax
+                ;ret
+            .elseif char == '+'
+                mov sib_flag, 1
+                invoke StringCopy, addr Operand_name, addr base, Operand_name_index
+                invoke ClearString, addr Operand_name, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
+            .elseif char == '*'
+                invoke StringCopy, addr Operand_name, addr index, Operand_name_index
+                invoke ClearString, addr Operand_name, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
             .endif
         .endif
     .endw
     final:
+        mov eax, current_address_pointer
         ret
 instruction_tokenizer ENDP
 
@@ -474,23 +657,29 @@ code_tokenizer PROC,
           current_status    :BYTE,
           char              :BYTE,
           proc_name_index   :BYTE,
-          proc_label_index  :BYTE
+          proc_label_index  :BYTE,
+          end_context       :DWORD
 
     mov address_space, 0
     mov proc_name_index, 0
     mov proc_label_index, 0
     mov edx, start_context
     mov ecx, 0
+    mov esi, start_address
+    add esi, max_length
+    mov end_context, esi
     mov current_status, start_status
     L1:
 		push eax
 		mov al, BYTE PTR[edx]
         mov char, al
 		pop eax
+        inc edx
+        inc ecx
         .if( current_status == start_status)
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
                 mov current_status, proc_name_status
-                 invoke Write_at, addr proc_name, proc_name_index, char
+                invoke Write_at, addr proc_name, proc_name_index, char
                 inc proc_name_index
             .endif;Error process
         .elseif (current_status == proc_name_status)
@@ -511,19 +700,23 @@ code_tokenizer PROC,
                 invoke Write_at, addr proc_label, proc_label_index, char
                 inc proc_label_index
             .elseif (char == ' ') || (char == 0) || (char == 10) || (char == 13)
-                mov current_status, start_status
                 invoke check_proc_label, addr proc_label
                 .if (eax == 1)
+                    invoke push_symbol_list, offset proc_symbol_list, addr proc_name, address_space, 4
                     mov edi, start_context
                     add edi, max_length
-                    invoke instruction_tokenizer, edx, edi, addr address_space; Pay attention to the following inc ecx
+                    invoke instruction_tokenizer, edx, edi,  address_space; Pay attention to the following inc ecx
+                    add address_space, eax
                 .endif
+                mov current_status, start_status
+                invoke ClearString, proc_name, 20
+                invoke ClearString, proc_label, 10
+                mov proc_name_index, 0
+                mov proc_label_index, 0
 			.endif
         .else
         .endif 
-        inc ecx
-        inc edx
-    cmp ecx, max_length
+    cmp edx, end_context
     jle L1
 	ret
 code_tokenizer ENDP
