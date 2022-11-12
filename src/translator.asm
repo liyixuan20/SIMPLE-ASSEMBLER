@@ -325,6 +325,28 @@ generate_binary_code PROC,
             mov total_bytes, eax
 
         .endif
+    .elseif valid_oprand_count == 1
+        mov esi, operand_one_address
+        mov edi, operator_address
+        mov al, [edi]
+        mov ah, [edi+1]
+        mov bl, [edi+2]
+        mov bh, [edi+3]
+        .if ((al == 'j') && (ah == 'm') && (bl == 'p')) || ((al == 'J') && (ah == 'M') && (bl == 'P'))
+            mov al, E9h
+            mov opcode, al
+        .elseif ((al == 'c') && (ah == 'a') && (bl == 'l') && (bh == 'l')) || ((al == 'C') && (ah == 'A') && (bl == 'L') && (bh == 'L'))
+            mov al, E8h
+            mov opcode, al
+        .endif
+        mov al, opcode
+        mov ebx, TYPE BYTE
+        invoke WriteHexB
+        mov eax, (Operand PTR[esi]).address ;jump to this address
+        mov ebx, TYPE DWORD
+        invoke WriteHexB
+        mov eax, 5
+        mov total_bytes, eax
     .endif
     ;TODO return total bytes in eax
     mov al, 13
