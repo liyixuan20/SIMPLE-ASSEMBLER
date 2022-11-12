@@ -155,7 +155,8 @@ generate_binary_code PROC,
             modRM       :BYTE,
             displacement:DWORD,
             immediate   :DWORD,
-            total_bytes :DWORD
+            total_bytes :DWORD,
+            SIB         :BYTE
     
 	mov eax, 0
     mov total_bytes, eax
@@ -192,7 +193,7 @@ generate_binary_code PROC,
             mov ah, opcode
             mov ebx, TYPE WORD
             invoke WriteHexB
-            mov eax, 1
+            mov eax, 2
             mov total_bytes, eax
         .elseif bl == reg_type && bh == imm_type 
             mov edi, (Operand PTR[edi]).address; TODO store as 32bits value
@@ -250,13 +251,12 @@ generate_binary_code PROC,
             invoke WriteHexB 
             mov eax, 6
             mov total_bytes, eax
-         ;TODO indirect type 在search table 中要处理为reg_or_mem_type
-        .elseif bl == indirect_type && bh == imm_type; Whether valid
 
         .elseif (bl == indirect_type && bh == reg_type) || (bl == reg_type && bh == indirect_type)
             .if bl == indirect_type
                 mov esi, operand_two_address    ;reg
                 mov edi, operand_one_address
+            .endif
                 mov al, 0
                 mov mod_, al
                 
@@ -286,7 +286,43 @@ generate_binary_code PROC,
                 invoke WriteHexB
                 mov eax, 2
                 mov total_bytes, eax
+            ;endif
+        .elseif (bl == sib_type && bh == reg_type) || (bl == reg_type && bh == sib_type)
+            .if bl == sib_type
+                mov esi, operand_two_address ;reg
+                mov edi, operand_one_address
             .endif
+            mov al, 0
+            mov mod_, al
+            mov al, 100b
+            mov rm_, al
+
+            mov esi, (Operand PTR[esi]).address
+            mov edi, (Operand PTR[edi]).address
+
+            mov al, (RegOperand PTR[esi]).reg
+            mov reg_, al
+            shl mod_, 6
+            shl reg_, 3
+            mov al, 0
+            add al, mod_
+            add al, reg_
+            add al, rm_
+            mov modRM, al
+            mov al, (RegOperand PTR[edi]).reg
+            mov SIB, al 
+
+            mov al, opcode
+            mov ebx, TYPE BYTE
+            invoke WriteHexB
+            mov al, modRM
+            mov ebx, TYPE BYTE
+            invoke WriteHexB
+            mov al, SIB
+            mov ebx, TYPE BYTE
+            invoke WriteHexB
+            mov eax, 3
+            mov total_bytes, eax
 
         .endif
     .endif

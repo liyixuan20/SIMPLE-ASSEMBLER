@@ -470,15 +470,15 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
                 inc Operand_name_index
             .elseif (char == ']') && (sib_flag == 1)
                 invoke StringCopy, addr Operand_name, addr scale, Operand_name_index
-                invoke ClearString, addr Operand_name, buffer_length
-                invoke ProcessSIB, ;TODOTODOTODOTODO
+                invoke ProcessSIB, addr scale, addr index, addr base, 1
                 invoke ClearString, addr Operand_name, buffer_length
                 invoke ClearString, addr base, buffer_length
                 invoke ClearString, addr index, buffer_length
                 invoke ClearString, addr scale, buffer_length
-                mov Operand_name_index, 0
-                mov indirect_flag, 0
-                mov sib_flag, 0
+                mov al, 0
+                mov Operand_name_index, al
+                mov indirect_flag, al 
+                mov sib_flag, al
 				mov current_status, after_operand_one_status
             .elseif (char == ' ') || (char == ',') || (char == ']')
                 ;Begin check_endp
@@ -522,9 +522,13 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
                 mov sib_flag, 1
                 invoke StringCopy, addr Operand_name, addr base, Operand_name_index
                 invoke ClearString, addr Operand_name, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
             .elseif char == '*'
                 invoke StringCopy, addr Operand_name, addr index, Operand_name_index
                 invoke ClearString, addr Operand_name, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
             .endif
         .elseif current_status == after_operand_one_status
             .if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
@@ -551,6 +555,18 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
             .elseif (char >= '0' && char <= '9')
                  invoke Write_at, addr Operand_name, Operand_name_index, char
                 inc Operand_name_index
+            .elseif (char == ']') && (sib_flag == 1)
+                invoke StringCopy, addr Operand_name, addr scale, Operand_name_index
+                invoke ProcessSIB, addr scale, addr index, addr base, 2 ;Do not use processOperand, just use ProcessSIB
+                invoke ClearString, addr Operand_name, buffer_length
+                invoke ClearString, addr base, buffer_length
+                invoke ClearString, addr index, buffer_length
+                invoke ClearString, addr scale, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
+                mov indirect_flag, al
+                mov sib_flag, al
+				mov current_status, start_status
             .elseif char == ' ' || char == 0 || char == 10 || char == 13 || char == ']'
                 mov current_status, start_status
                 invoke process_operand, addr Operand_name, Operand_name_index, 2, indirect_flag, Operand_type
@@ -559,7 +575,18 @@ instruction_tokenizer PROC USES eax ebx ecx edx esi edi,
                 mov Operand_name_index, 0
                 mov indirect_flag, 0
                 invoke generate_binary_code, offset standard_opeator, offset standard_operand_one, offset standard_operand_two, 2, current_address_pointer; TODO
-				ret
+                ;ret
+            .elseif char == '+'
+                mov sib_flag, 1
+                invoke StringCopy, addr Operand_name, addr base, Operand_name_index
+                invoke ClearString, addr Operand_name, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
+            .elseif char == '*'
+                invoke StringCopy, addr Operand_name, addr index, Operand_name_index
+                invoke ClearString, addr Operand_name, buffer_length
+                mov al, 0
+                mov Operand_name_index, al
             .endif
         .endif
     .endw
